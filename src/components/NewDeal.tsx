@@ -6,26 +6,54 @@ import { TxButton } from './TxButton'
 import { TxReceipt } from './TxReceipt'
 import { parseAmount, formatUnitsFixed } from '@/onchain-money'
 import { toast } from 'sonner'
-import { Info, ExternalLink } from 'lucide-react'
-
-const glass = {
-  card: {
-    background: 'rgba(255,255,255,0.72)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    border: '1px solid var(--border)',
-    borderRadius: '24px',
-  } as React.CSSProperties,
-  inner: {
-    background: 'var(--surface-muted)',
-    borderRadius: '16px',
-    border: '1px solid var(--border)',
-  } as React.CSSProperties,
-}
+import { ArrowLeft, CheckCircle2, Info, ExternalLink } from 'lucide-react'
+import { type ServiceTemplate } from '@/services'
 
 type Step = 'form' | 'seller-sign' | 'buyer-sign' | 'approve' | 'fund' | 'done'
 
-export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) {
+const STEP_LABELS: Step[] = ['form', 'seller-sign', 'buyer-sign', 'approve', 'fund', 'done']
+const STEP_NAMES = ['Terms', 'Seller sign', 'Buyer sign', 'Approve', 'Fund', 'Done']
+
+interface NewDealProps {
+  onCreated: (dealId: bigint) => void
+  onCancel?: () => void
+  template?: ServiceTemplate
+}
+
+function Field({
+  label, value, onChange, placeholder, hint, type = 'text',
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; hint?: string; type?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--muted)', letterSpacing: '0.07em' }}>
+        {label}
+      </label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        type={type}
+        className="w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+        style={{ background: 'var(--surface-muted)', color: 'var(--ink)', border: '1px solid var(--border)' }}
+      />
+      {hint && <p className="mt-1 text-xs" style={{ color: 'var(--subtle)' }}>{hint}</p>}
+    </div>
+  )
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+      <span className="text-xs" style={{ color: 'var(--muted)' }}>{label}</span>
+      <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--ink)' }}>{value}</span>
+    </div>
+  )
+}
+
+export function NewDeal({ onCreated, onCancel, template }: NewDealProps) {
   const { address, chainId } = useAccount()
   const wrongChain = chainId !== ARC_TESTNET_CHAIN_ID
   const { switchChainAsync } = useSwitchChain()
@@ -34,43 +62,40 @@ export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) 
     dealId: String(Date.now()),
     seller: '',
     payee: '',
-    unitPrice: '0.01',
-    maxUnits: '100',
-    prepaid: '1.00',
-    termDays: '30',
-    graceDays: '3',
+    unitPrice: template?.unitPrice ?? '0.01',
+    maxUnits: template?.maxUnits ?? '100',
+    prepaid: template?.typicalBudget ?? '1.00',
+    termDays: template?.termDays ?? '30',
+    graceDays: template?.graceDays ?? '3',
   }))
 
   const [step, setStep] = useState<Step>('form')
-  const [sellerSig, setSellerSig] = useState<string>('')
-  const [buyerSig, setBuyerSig] = useState<string>('')
+  const [sellerSig, setSellerSig] = useState('')
+  const [buyerSig, setBuyerSig] = useState('')
   const [termsData, setTermsData] = useState<Record<string, unknown> | null>(null)
 
   const { signTypedDataAsync: signTerms } = useSignTypedData()
 
-  // Approve USDC
   const { writeContract: approveUsdc, data: approveHash, isPending: approvePending } = useWriteContract()
   const { isLoading: approveConfirming, isSuccess: approveSuccess, isError: approveError, error: approveErr } =
     useWaitForTransactionReceipt({ hash: approveHash, chainId: ARC_TESTNET_CHAIN_ID })
 
-  // Fund deal
   const { writeContract: fundDeal, data: fundHash, isPending: fundPending, isError: fundError, error: fundErr } = useWriteContract()
   const { isLoading: fundConfirming, isSuccess: fundSuccess } = useWaitForTransactionReceipt({ hash: fundHash, chainId: ARC_TESTNET_CHAIN_ID })
 
   const prepaidMicro = (() => {
-    try { return parseAmount(ARC_TESTNET_CHAIN_ID, form.prepaid).raw }
-    catch { return 0n }
+    try { return parseAmount(ARC_TESTNET_CHAIN_ID, form.prepaid).raw } catch { return 0n }
   })()
   const unitPriceMicro = (() => {
-    try { return parseAmount(ARC_TESTNET_CHAIN_ID, form.unitPrice).raw }
-    catch { return 0n }
+    try { return parseAmount(ARC_TESTNET_CHAIN_ID, form.unitPrice).raw } catch { return 0n }
   })()
+
+  function set(key: keyof typeof form) {
+    return (v: string) => setForm((f) => ({ ...f, [key]: v }))
+  }
 
   function buildTerms() {
     const now = Math.floor(Date.now() / 1000)
-    const end = BigInt(now + parseInt(form.termDays) * 86400)
-    const grace = BigInt(parseInt(form.graceDays) * 86400)
-    const expiry = BigInt(now + 3600)
     return {
       dealId: BigInt(form.dealId),
       buyer: address as Address,
@@ -79,54 +104,30 @@ export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) 
       unitPrice: unitPriceMicro,
       maxUnits: BigInt(form.maxUnits),
       prepaid: prepaidMicro,
-      end,
-      grace,
+      end: BigInt(now + parseInt(form.termDays) * 86400),
+      grace: BigInt(parseInt(form.graceDays) * 86400),
       nonce: 0n,
-      expiry,
+      expiry: BigInt(now + 3600),
     }
+  }
+
+  const DOMAIN = { name: 'MeteredEscrow', version: '1', chainId: ARC_TESTNET_CHAIN_ID, verifyingContract: METERED_ESCROW.address }
+  const TERMS_TYPES = {
+    Terms: [
+      { name: 'dealId', type: 'uint256' }, { name: 'buyer', type: 'address' },
+      { name: 'seller', type: 'address' }, { name: 'payee', type: 'address' },
+      { name: 'unitPrice', type: 'uint256' }, { name: 'maxUnits', type: 'uint256' },
+      { name: 'prepaid', type: 'uint256' }, { name: 'end', type: 'uint64' },
+      { name: 'grace', type: 'uint64' }, { name: 'nonce', type: 'uint256' },
+      { name: 'expiry', type: 'uint64' },
+    ],
   }
 
   async function handleSellerSign() {
     const t = buildTerms()
     setTermsData(t)
     try {
-      const sig = await signTerms({
-        domain: {
-          name: 'MeteredEscrow',
-          version: '1',
-          chainId: ARC_TESTNET_CHAIN_ID,
-          verifyingContract: METERED_ESCROW.address,
-        },
-        types: {
-          Terms: [
-            { name: 'dealId', type: 'uint256' },
-            { name: 'buyer', type: 'address' },
-            { name: 'seller', type: 'address' },
-            { name: 'payee', type: 'address' },
-            { name: 'unitPrice', type: 'uint256' },
-            { name: 'maxUnits', type: 'uint256' },
-            { name: 'prepaid', type: 'uint256' },
-            { name: 'end', type: 'uint64' },
-            { name: 'grace', type: 'uint64' },
-            { name: 'nonce', type: 'uint256' },
-            { name: 'expiry', type: 'uint64' },
-          ],
-        },
-        primaryType: 'Terms',
-        message: {
-          dealId: t.dealId,
-          buyer: t.buyer,
-          seller: t.seller,
-          payee: t.payee,
-          unitPrice: t.unitPrice,
-          maxUnits: t.maxUnits,
-          prepaid: t.prepaid,
-          end: t.end,
-          grace: t.grace,
-          nonce: t.nonce,
-          expiry: t.expiry,
-        },
-      })
+      const sig = await signTerms({ domain: DOMAIN, types: TERMS_TYPES, primaryType: 'Terms', message: t })
       setSellerSig(sig)
       setStep('buyer-sign')
     } catch (e: unknown) {
@@ -139,33 +140,8 @@ export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) 
     if (!t) return
     try {
       const sig = await signTerms({
-        domain: {
-          name: 'MeteredEscrow',
-          version: '1',
-          chainId: ARC_TESTNET_CHAIN_ID,
-          verifyingContract: METERED_ESCROW.address,
-        },
-        types: {
-          Terms: [
-            { name: 'dealId', type: 'uint256' },
-            { name: 'buyer', type: 'address' },
-            { name: 'seller', type: 'address' },
-            { name: 'payee', type: 'address' },
-            { name: 'unitPrice', type: 'uint256' },
-            { name: 'maxUnits', type: 'uint256' },
-            { name: 'prepaid', type: 'uint256' },
-            { name: 'end', type: 'uint64' },
-            { name: 'grace', type: 'uint64' },
-            { name: 'nonce', type: 'uint256' },
-            { name: 'expiry', type: 'uint64' },
-          ],
-        },
-        primaryType: 'Terms',
-        message: t as {
-          dealId: bigint; buyer: `0x${string}`; seller: `0x${string}`; payee: `0x${string}`;
-          unitPrice: bigint; maxUnits: bigint; prepaid: bigint; end: bigint; grace: bigint;
-          nonce: bigint; expiry: bigint;
-        },
+        domain: DOMAIN, types: TERMS_TYPES, primaryType: 'Terms',
+        message: t,
       })
       setBuyerSig(sig)
       setStep('approve')
@@ -178,13 +154,7 @@ export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) 
     if (chainId !== ARC_TESTNET_CHAIN_ID) {
       try { await switchChainAsync({ chainId: ARC_TESTNET_CHAIN_ID }) } catch { return }
     }
-    approveUsdc({
-      address: USDC_ADDRESS,
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [METERED_ESCROW.address, prepaidMicro],
-      chainId: ARC_TESTNET_CHAIN_ID,
-    })
+    approveUsdc({ address: USDC_ADDRESS, abi: erc20Abi, functionName: 'approve', args: [METERED_ESCROW.address, prepaidMicro], chainId: ARC_TESTNET_CHAIN_ID })
   }
 
   async function handleFund() {
@@ -193,169 +163,219 @@ export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) 
     if (chainId !== ARC_TESTNET_CHAIN_ID) {
       try { await switchChainAsync({ chainId: ARC_TESTNET_CHAIN_ID }) } catch { return }
     }
-    fundDeal({
-      address: METERED_ESCROW.address,
-      abi: METERED_ESCROW.abi,
-      functionName: 'createAndFundDeal',
-      args: [t, buyerSig as `0x${string}`, sellerSig as `0x${string}`],
-      chainId: ARC_TESTNET_CHAIN_ID,
-    })
+    fundDeal({ address: METERED_ESCROW.address, abi: METERED_ESCROW.abi, functionName: 'createAndFundDeal', args: [t, buyerSig as `0x${string}`, sellerSig as `0x${string}`], chainId: ARC_TESTNET_CHAIN_ID })
   }
 
-  // Advance steps on success
   if (approveSuccess && step === 'approve') setStep('fund')
   if (fundSuccess && step === 'fund' && termsData) {
     setStep('done')
-    onCreated((termsData).dealId as bigint)
+    onCreated(termsData.dealId as bigint)
   }
 
-  const field = (label: string, key: keyof typeof form, hint?: string) => (
-    <div>
-      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
-        {label}
-      </label>
-      <input
-        value={form[key]}
-        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-        className="w-full rounded-xl px-3 py-2.5 text-sm font-medium outline-none transition-all focus:ring-2"
-        style={{
-          background: 'var(--surface-muted)',
-          color: 'var(--ink)',
-          border: '1px solid var(--border)',
-        }}
-        placeholder={hint}
-      />
-    </div>
-  )
+  const stepIndex = STEP_LABELS.indexOf(step)
+  const unitLabel = template?.unitLabel ?? 'unit'
 
   return (
-    <div className="space-y-4">
-      {step === 'form' && (
-        <div className="space-y-3 rounded-3xl p-6" style={glass.card}>
-          <h2 className="display text-xl font-bold" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>
-            New Escrow Deal
+    <div className="max-w-2xl space-y-6">
+      {/* Header */}
+      <div className="flex items-start gap-4">
+        {onCancel && (
+          <button
+            onClick={onCancel}
+            className="mt-0.5 flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-70"
+            style={{ color: 'var(--muted)' }}
+          >
+            <ArrowLeft className="size-3.5" />
+            Back
+          </button>
+        )}
+        <div className="flex-1">
+          <h2 className="display text-2xl font-bold" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>
+            {template ? `Buy: ${template.name}` : 'New escrow deal'}
           </h2>
-          <p className="text-xs" style={{ color: 'var(--muted)' }}>
-            Both parties sign the terms; USDC is locked until work is accepted.
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {field('Deal ID', 'dealId', 'unique number')}
-            {field('Unit Price (USDC)', 'unitPrice', '0.01')}
-          </div>
-          {field('Seller Address', 'seller', '0x...')}
-          {field('Payee Address', 'payee', 'defaults to seller')}
-          <div className="grid grid-cols-3 gap-3">
-            {field('Max Units', 'maxUnits', '100')}
-            {field('Term (days)', 'termDays', '30')}
-            {field('Grace (days)', 'graceDays', '3')}
-          </div>
-          {field('Prepaid USDC', 'prepaid', '1.00')}
-
-          <div className="flex items-start gap-2 rounded-xl p-3" style={glass.inner}>
-            <Info className="mt-0.5 size-3.5 shrink-0" style={{ color: 'var(--muted)' }} />
-            <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              In this demo, you'll sign as both buyer and seller. In production, the seller signs first and sends their signature to the buyer.
-            </p>
-          </div>
-
-          <TxButton
-            onClick={() => setStep('seller-sign')}
-            disabled={wrongChain || !address || !form.seller}
-            label="Continue — get seller signature"
-          />
-        </div>
-      )}
-
-      {step === 'seller-sign' && (
-        <div className="space-y-4 rounded-3xl p-6" style={glass.card}>
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: 'var(--accent)' }}>1</div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Seller signs the terms</p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>Signing as {form.seller.slice(0, 8)}...</p>
-            </div>
-          </div>
-          <TxButton onClick={() => { void handleSellerSign() }} label="Sign as Seller" />
-        </div>
-      )}
-
-      {step === 'buyer-sign' && (
-        <div className="space-y-4 rounded-3xl p-6" style={glass.card}>
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: 'var(--accent)' }}>2</div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Buyer signs the terms</p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>Confirm you accept these deal terms</p>
-            </div>
-          </div>
-          <TxButton onClick={() => { void handleBuyerSign() }} label="Sign as Buyer" />
-        </div>
-      )}
-
-      {step === 'approve' && (
-        <div className="space-y-4 rounded-3xl p-6" style={glass.card}>
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: 'var(--accent)' }}>3</div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Approve USDC spend</p>
-              <p className="text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
-                Allow escrow contract to pull {formatUnitsFixed(prepaidMicro, 6, 2)} USDC
-              </p>
-            </div>
-          </div>
-          <TxButton
-            onClick={() => { void handleApprove() }}
-            isPending={approvePending}
-            isConfirming={approveConfirming}
-            label="Approve USDC"
-          />
-          <TxReceipt hash={approveHash} isSuccess={approveSuccess} isError={approveError} error={approveErr} label="Approval" />
-        </div>
-      )}
-
-      {step === 'fund' && (
-        <div className="space-y-4 rounded-3xl p-6" style={glass.card}>
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: 'var(--accent)' }}>4</div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Fund the escrow</p>
-              <p className="text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
-                Lock {formatUnitsFixed(prepaidMicro, 6, 2)} USDC into the contract
-              </p>
-            </div>
-          </div>
-          <TxButton
-            onClick={() => { void handleFund() }}
-            isPending={fundPending}
-            isConfirming={fundConfirming}
-            label="Fund Deal"
-          />
-          <TxReceipt hash={fundHash} isSuccess={fundSuccess} isError={fundError} error={fundErr} label="Deal funding" />
-        </div>
-      )}
-
-      {step === 'done' && (
-        <div className="space-y-3 rounded-3xl p-6" style={glass.card}>
-          <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-full" style={{ background: 'rgba(26,128,71,0.12)' }}>
-              <span className="text-sm">✓</span>
-            </div>
-            <p className="text-sm font-bold" style={{ color: 'var(--success)' }}>Deal funded on Arc Testnet</p>
-          </div>
-          <p className="text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
-            Deal ID: {form.dealId}
-          </p>
-          {fundHash && (
-            <a
-              href={`${ARC_TESTNET_EXPLORER}/tx/${fundHash}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-70"
-              style={{ color: 'var(--muted)' }}
-            >
-              View funding transaction <ExternalLink className="size-3" />
-            </a>
+          {template && (
+            <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>{template.description}</p>
           )}
+        </div>
+      </div>
+
+      {/* Step progress */}
+      {step !== 'done' && (
+        <div className="flex items-center gap-0">
+          {STEP_LABELS.slice(0, -1).map((s, i) => (
+            <div key={s} className="flex items-center flex-1">
+              <div
+                className="flex size-6 items-center justify-center rounded-full text-xs font-bold shrink-0"
+                style={{
+                  background: i < stepIndex ? 'var(--success)' : i === stepIndex ? 'var(--accent)' : 'var(--surface-muted)',
+                  color: i <= stepIndex ? 'white' : 'var(--muted)',
+                }}
+              >
+                {i < stepIndex ? <CheckCircle2 className="size-3.5" /> : i + 1}
+              </div>
+              <p className="ml-1.5 text-xs font-medium" style={{ color: i === stepIndex ? 'var(--ink)' : 'var(--muted)' }}>
+                {STEP_NAMES[i]}
+              </p>
+              {i < STEP_LABELS.length - 2 && (
+                <div className="mx-2 flex-1 h-px" style={{ background: i < stepIndex ? 'var(--success)' : 'var(--border)' }} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Step: form ── */}
+      {step === 'form' && (
+        <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
+          <div className="px-6 py-5 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Deal ID" value={form.dealId} onChange={set('dealId')} placeholder="Unique ID" hint="Auto-generated from timestamp" />
+              <Field label={`Price per ${unitLabel} (USDC)`} value={form.unitPrice} onChange={set('unitPrice')} placeholder="0.01" type="number" />
+            </div>
+            <Field label="Seller address" value={form.seller} onChange={set('seller')} placeholder="0x..." hint="The agent or service provider receiving payment" />
+            <Field label="Payee address (optional)" value={form.payee} onChange={set('payee')} placeholder="Defaults to seller" hint="Where USDC is sent on settlement" />
+            <div className="grid grid-cols-3 gap-4">
+              <Field label={`Max ${unitLabel}s`} value={form.maxUnits} onChange={set('maxUnits')} placeholder="100" type="number" />
+              <Field label="Term (days)" value={form.termDays} onChange={set('termDays')} placeholder="30" type="number" />
+              <Field label="Grace (days)" value={form.graceDays} onChange={set('graceDays')} placeholder="3" type="number" />
+            </div>
+            <Field label="Budget (USDC)" value={form.prepaid} onChange={set('prepaid')} placeholder="1.00" hint={`= ${form.maxUnits} ${unitLabel}s × $${form.unitPrice} each`} type="number" />
+
+            <div className="flex items-start gap-2 rounded-lg px-4 py-3" style={{ background: 'var(--surface-muted)' }}>
+              <Info className="mt-0.5 size-3.5 shrink-0" style={{ color: 'var(--muted)' }} />
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                In this demo you sign as both seller and buyer. In production, the seller signs first and shares their signature with you.
+              </p>
+            </div>
+          </div>
+
+          <div className="px-6 py-4" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
+            <TxButton
+              onClick={() => setStep('seller-sign')}
+              disabled={wrongChain || !address || !form.seller}
+              label="Continue to signing"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: seller sign ── */}
+      {step === 'seller-sign' && (
+        <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Seller signs the terms</p>
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>
+              The seller cryptographically commits to the deal terms before any funds are locked.
+            </p>
+            {/* Summary */}
+            <div className="rounded-lg px-4 py-1" style={{ background: 'var(--surface-muted)' }}>
+              <SummaryRow label="Service" value={template?.name ?? 'Custom'} />
+              <SummaryRow label="Seller" value={`${form.seller.slice(0, 10)}…${form.seller.slice(-6)}`} />
+              <SummaryRow label={`Price per ${unitLabel}`} value={`$${form.unitPrice} USDC`} />
+              <SummaryRow label="Budget" value={`$${form.prepaid} USDC`} />
+              <SummaryRow label="Term" value={`${form.termDays} days`} />
+            </div>
+            <TxButton onClick={() => { void handleSellerSign() }} label="Sign as seller" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: buyer sign ── */}
+      {step === 'buyer-sign' && (
+        <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Buyer confirms the terms</p>
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>
+              You're committing to these deal terms. Signing does not move funds — that happens in the next step.
+            </p>
+            <div className="rounded-lg px-4 py-1" style={{ background: 'var(--surface-muted)' }}>
+              <SummaryRow label="Service" value={template?.name ?? 'Custom'} />
+              <SummaryRow label={`Price per ${unitLabel}`} value={`$${form.unitPrice} USDC`} />
+              <SummaryRow label="Budget locked" value={`$${form.prepaid} USDC`} />
+              <SummaryRow label="Seller signed" value="Yes" />
+            </div>
+            <TxButton onClick={() => { void handleBuyerSign() }} label="Sign as buyer" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: approve ── */}
+      {step === 'approve' && (
+        <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Approve USDC spend</p>
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>
+              Allow the escrow contract to pull{' '}
+              <span className="font-semibold tabular-nums" style={{ color: 'var(--ink)' }}>
+                {formatUnitsFixed(prepaidMicro, 6, 2)} USDC
+              </span>{' '}
+              from your wallet.
+            </p>
+            <TxButton
+              onClick={() => { void handleApprove() }}
+              isPending={approvePending}
+              isConfirming={approveConfirming}
+              label="Approve USDC"
+            />
+            <TxReceipt hash={approveHash} isSuccess={approveSuccess} isError={approveError} error={approveErr} label="Approval" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: fund ── */}
+      {step === 'fund' && (
+        <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Fund the escrow</p>
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>
+              Lock{' '}
+              <span className="font-semibold tabular-nums" style={{ color: 'var(--ink)' }}>
+                {formatUnitsFixed(prepaidMicro, 6, 2)} USDC
+              </span>{' '}
+              into the contract. The seller can only receive funds you explicitly sign for.
+            </p>
+            <TxButton
+              onClick={() => { void handleFund() }}
+              isPending={fundPending}
+              isConfirming={fundConfirming}
+              label="Fund deal"
+            />
+            <TxReceipt hash={fundHash} isSuccess={fundSuccess} isError={fundError} error={fundErr} label="Deal funding" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: done ── */}
+      {step === 'done' && (
+        <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
+          <div className="px-6 py-8 flex flex-col items-center gap-4 text-center">
+            <div
+              className="flex size-12 items-center justify-center rounded-full"
+              style={{ background: 'var(--success-light)' }}
+            >
+              <CheckCircle2 className="size-6" style={{ color: 'var(--success)' }} />
+            </div>
+            <div>
+              <p className="text-base font-bold" style={{ color: 'var(--ink)' }}>Deal funded</p>
+              <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
+                {template?.name ?? 'Escrow deal'} is active on Arc Testnet.
+              </p>
+            </div>
+            <div className="text-xs mono tabular-nums" style={{ color: 'var(--muted)' }}>
+              Deal ID: {form.dealId}
+            </div>
+            {fundHash && (
+              <a
+                href={`${ARC_TESTNET_EXPLORER}/tx/${fundHash}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium"
+                style={{ color: 'var(--accent)' }}
+              >
+                View transaction <ExternalLink className="size-3" />
+              </a>
+            )}
+          </div>
         </div>
       )}
     </div>
