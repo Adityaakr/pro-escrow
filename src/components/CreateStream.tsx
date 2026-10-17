@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSignTypedData, useSwitchChain } from 'wagmi'
-import { erc20Abi, type Address } from 'viem'
+import { erc20Abi } from 'viem'
 import { METERED_ESCROW, USDC_ADDRESS, ARC_TESTNET_CHAIN_ID, ARC_TESTNET_EXPLORER } from '@/contract'
 import { TxButton } from './TxButton'
 import { TxReceipt } from './TxReceipt'
 import { STREAM_TYPES, encodeStreamId, getStreamType, parseUSDC, fmtUSDC, type StreamType } from '@/streams'
 import { toast } from 'sonner'
 import { ArrowLeft, Briefcase, TrendingUp, CheckSquare, ExternalLink, ChevronRight } from 'lucide-react'
+
+function getUnixNow() { return Math.floor(Date.now() / 1000) }
 
 const TYPE_ICON: Record<StreamType, React.ReactNode> = {
   payroll: <Briefcase className="size-5" />,
@@ -79,41 +81,22 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   const [funderSig, setFunderSig] = useState('')
   const [termsData, setTermsData] = useState<Record<string, unknown> | null>(null)
 
-  // When initialType changes (user clicks type in sidebar), reset
-  useEffect(() => {
-    if (initialType) {
-      setStreamType(initialType)
-      setStep('form')
-    }
-  }, [initialType])
-
   const meta = streamType ? getStreamType(streamType) : null
   const d = meta?.defaults
 
-  const [form, setForm] = useState(() => ({
-    title: '',
-    recipient: '',
-    payee: '',
-    unitPrice: d?.unitPrice ?? '1000.00',
-    maxUnits: d?.maxUnits ?? '12',
-    prepaid: d?.prepaid ?? '12000.00',
-    termDays: d?.termDays ?? '365',
-    graceDays: d?.graceDays ?? '30',
-  }))
-
-  // Sync defaults when type changes
-  useEffect(() => {
-    if (!meta) return
-    setForm(f => ({
-      ...f,
-      unitPrice: meta.defaults.unitPrice,
-      maxUnits:  meta.defaults.maxUnits,
-      prepaid:   meta.defaults.prepaid,
-      termDays:  meta.defaults.termDays,
-      graceDays: meta.defaults.graceDays,
-      title:     meta.defaults.title,
-    }))
-  }, [streamType]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [form, setForm] = useState(() => {
+    const defaults = d ?? getStreamType('escrow').defaults
+    return {
+      title: defaults.title,
+      recipient: '',
+      payee: '',
+      unitPrice: defaults.unitPrice,
+      maxUnits:  defaults.maxUnits,
+      prepaid:   defaults.prepaid,
+      termDays:  defaults.termDays,
+      graceDays: defaults.graceDays,
+    }
+  })
 
   const { signTypedDataAsync } = useSignTypedData()
 
@@ -130,23 +113,6 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   // Compute the deal ID once when we enter form step
   const [dealId] = useState(() => streamType ? encodeStreamId(streamType) : encodeStreamId('escrow'))
 
-  function buildTerms() {
-    const now = Math.floor(Date.now() / 1000)
-    return {
-      dealId,
-      buyer:     address as Address,
-      seller:    form.recipient as Address,
-      payee:     (form.payee || form.recipient) as Address,
-      unitPrice: unitPriceMicro,
-      maxUnits:  BigInt(form.maxUnits),
-      prepaid:   prepaidMicro,
-      end:       BigInt(now + parseInt(form.termDays) * 86400),
-      grace:     BigInt(parseInt(form.graceDays) * 86400),
-      nonce:     0n,
-      expiry:    BigInt(now + 3600),
-    }
-  }
-
   const termsTypes = {
     Terms: [
       { name: 'dealId',    type: 'uint256' }, { name: 'buyer',    type: 'address' },
@@ -160,7 +126,21 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   const domain = { name: 'MeteredEscrow', version: '1', chainId: ARC_TESTNET_CHAIN_ID, verifyingContract: METERED_ESCROW.address }
 
   async function handleRecipientSign() {
-    const t = buildTerms(); setTermsData(t)
+    const now = getUnixNow()
+    const t: Record<string, unknown> = {
+      dealId,
+      buyer:     address,
+      seller:    form.recipient,
+      payee:     (form.payee || form.recipient),
+      unitPrice: unitPriceMicro,
+      maxUnits:  BigInt(form.maxUnits),
+      prepaid:   prepaidMicro,
+      end:       BigInt(now + parseInt(form.termDays) * 86400),
+      grace:     BigInt(parseInt(form.graceDays) * 86400),
+      nonce:     0n,
+      expiry:    BigInt(now + 3600),
+    }
+    setTermsData(t)
     try {
       const sig = await signTypedDataAsync({ domain, types: termsTypes, primaryType: 'Terms', message: { ...t } })
       setRecipientSig(sig); setStep('sign-funder')

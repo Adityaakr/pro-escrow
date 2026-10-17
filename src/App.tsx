@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import { ConnectKitButton } from 'connectkit'
-import { LayoutDashboard, ArrowRightLeft, Briefcase, Settings, ExternalLink, TrendingUp, CheckSquare } from 'lucide-react'
+import { LayoutDashboard, ArrowRightLeft, Briefcase, Settings, TrendingUp, CheckSquare } from 'lucide-react'
+// Briefcase/TrendingUp/CheckSquare used in sidebar stream-type shortcuts below
 import { NetworkTenet } from '@web3icons/react'
-import { ARC_TESTNET_EXPLORER, METERED_ESCROW } from './contract'
 import { StreamsList } from './components/StreamsList'
 import { CreateStream } from './components/CreateStream'
 import { DashboardView } from './components/DashboardView'
+import { LandingPage } from './components/LandingPage'
 import type { StreamType } from './streams'
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
@@ -155,64 +156,6 @@ function Topbar({ title, sub }: { title: string; sub?: string }) {
   )
 }
 
-// ── Landing ───────────────────────────────────────────────────────────────────
-function Landing() {
-  return (
-    <div className="flex min-h-dvh items-center justify-center p-6" style={{ background: 'var(--bg)' }}>
-      <div className="w-full max-w-sm space-y-8">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <FlowPayLogo size={52} />
-          <div>
-            <h1 className="display text-2xl font-bold" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>
-              FlowPay
-            </h1>
-            <p className="mt-1.5 text-sm" style={{ color: 'var(--muted)', lineHeight: '1.6' }}>
-              USDC payroll, vesting schedules, and milestone escrow.<br />
-              Trustless. On-chain. No intermediaries.
-            </p>
-          </div>
-        </div>
-
-        {/* Stream types */}
-        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-          {[
-            { icon: <Briefcase className="size-4" />, color: 'var(--blue)',   label: 'Payroll',  desc: 'Monthly salary — lock and release per pay period' },
-            { icon: <TrendingUp className="size-4" />, color: 'var(--purple)', label: 'Vesting',  desc: 'Linear grant vesting over tranches — cliff optional' },
-            { icon: <CheckSquare className="size-4" />, color: 'var(--amber)', label: 'Escrow',   desc: 'Milestone-based project payments — client signs off' },
-          ].map(({ icon, color, label, desc }, i) => (
-            <div
-              key={label}
-              className="flex items-start gap-3 px-4 py-3.5"
-              style={{ background: 'var(--bg-white)', borderTop: i > 0 ? '1px solid var(--border)' : undefined }}
-            >
-              <div className="mt-0.5 flex size-7 items-center justify-center rounded-lg shrink-0" style={{ background: color + '18', color }}>
-                {icon}
-              </div>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>{label}</p>
-                <p className="text-xs" style={{ color: 'var(--muted)' }}>{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-3 text-center">
-          <ConnectKitButton label="Connect wallet to start" />
-          <a
-            href={`${ARC_TESTNET_EXPLORER}/address/${METERED_ESCROW.address}`}
-            target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs transition-opacity hover:opacity-70"
-            style={{ color: 'var(--subtle)' }}
-          >
-            {METERED_ESCROW.address.slice(0, 10)}…{METERED_ESCROW.address.slice(-6)}
-            <ExternalLink className="size-3" />
-          </a>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const { address } = useAccount()
@@ -220,7 +163,7 @@ export default function App() {
   const [refreshTick, setRefreshTick] = useState(0)
   const [createType, setCreateType] = useState<StreamType | null>(null)
 
-  if (!address) return <Landing />
+  if (!address) return <LandingPage />
 
   const VIEW_TITLES: Record<View, { title: string; sub?: string }> = {
     dashboard: { title: 'Overview',     sub: 'Your USDC stream activity' },
@@ -273,14 +216,7 @@ export default function App() {
         <footer className="px-6 py-3 text-xs flex items-center gap-2" style={{ borderTop: '1px solid var(--border)', color: 'var(--subtle)' }}>
           <span>FlowPay</span>
           <span>·</span>
-          <a
-            href={`${ARC_TESTNET_EXPLORER}/address/${METERED_ESCROW.address}`}
-            target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-1 hover:opacity-70 transition-opacity"
-          >
-            Contract {METERED_ESCROW.address.slice(0, 10)}…{METERED_ESCROW.address.slice(-6)}
-            <ExternalLink className="size-3" />
-          </a>
+          <span>USDC streams on Arc Testnet</span>
         </footer>
       </div>
     </div>
