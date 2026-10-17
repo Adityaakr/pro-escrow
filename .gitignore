@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment variables — NEVER commit secrets
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# Circle recovery files
+.circle/
+
+# Logs & traces (sandbox artifacts)
+traces.jsonl
+console.jsonl
+
+# Bun
+.bun/
+
+# OS
+.DS_Store
+Thumbs.db

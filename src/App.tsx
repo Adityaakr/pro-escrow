@@ -4,9 +4,39 @@ import { ConnectKitButton } from 'connectkit'
 import { WalletBar } from './components/WalletBar'
 import { NewDeal } from './components/NewDeal'
 import { DealsList } from './components/DealsList'
-import { NetworkTenet, TokenUSDC } from '@web3icons/react'
+import { NetworkTenet } from '@web3icons/react'
 import { ARC_TESTNET_EXPLORER, METERED_ESCROW } from './contract'
 import { ExternalLink } from 'lucide-react'
+
+function ArcLogo({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="arc-grad" x1="50" y1="0" x2="50" y2="100" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#2B2FC2" />
+          <stop offset="50%" stopColor="#6B3B8C" />
+          <stop offset="100%" stopColor="#A03070" />
+        </linearGradient>
+      </defs>
+      {/* Arch — thick rounded stroke forming the A shape */}
+      <path
+        d="M18 82 Q18 20 50 12 Q82 20 82 82"
+        stroke="url(#arc-grad)"
+        strokeWidth="14"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* Right foot curl inward */}
+      <path
+        d="M82 82 Q82 68 66 68"
+        stroke="url(#arc-grad)"
+        strokeWidth="14"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  )
+}
 
 type Tab = 'deals' | 'new'
 
@@ -26,8 +56,8 @@ export default function App() {
       <header className="sticky top-0 z-10 border-b px-4 py-3" style={{ background: 'rgba(255,255,255,0.80)', backdropFilter: 'blur(20px)', borderColor: 'var(--border)' }}>
         <div className="mx-auto flex max-w-xl items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-xl" style={{ background: 'var(--accent)' }}>
-              <TokenUSDC variant="branded" size={18} />
+            <div className="flex size-8 items-center justify-center rounded-xl overflow-hidden" style={{ background: '#0d0f1f' }}>
+              <ArcLogo size={22} />
             </div>
             <div>
               <span className="display text-base font-bold" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>
@@ -47,8 +77,8 @@ export default function App() {
         {!address ? (
           /* Landing */
           <div className="flex flex-col items-center gap-6 py-12 text-center">
-            <div className="flex size-16 items-center justify-center rounded-3xl" style={{ background: 'var(--accent)' }}>
-              <TokenUSDC variant="branded" size={32} />
+            <div className="flex size-16 items-center justify-center rounded-3xl overflow-hidden" style={{ background: '#0d0f1f' }}>
+              <ArcLogo size={44} />
             </div>
             <div>
               <h1 className="display text-3xl font-bold" style={{ color: 'var(--ink)', letterSpacing: '-0.04em' }}>

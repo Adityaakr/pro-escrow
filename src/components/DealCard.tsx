@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount, useSignTypedData } from 'wagmi'
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount, useSignTypedData, useSwitchChain } from 'wagmi'
 import { METERED_ESCROW, ARC_TESTNET_CHAIN_ID, ARC_TESTNET_EXPLORER, type OnchainDeal } from '@/contract'
 import { formatUnitsFixed } from '@/onchain-money'
 import { TxButton } from './TxButton'
@@ -59,7 +59,8 @@ function ProgressBar({ deposit, settled, refunded }: { deposit: bigint; settled:
 }
 
 export function DealCard({ dealId }: { dealId: bigint }) {
-  const { address } = useAccount()
+  const { address, chainId } = useAccount()
+  const { switchChainAsync } = useSwitchChain()
   const [expanded, setExpanded] = useState(false)
   const [units, setUnits] = useState('')
   const [note, setNote] = useState('')
@@ -93,15 +94,15 @@ export function DealCard({ dealId }: { dealId: bigint }) {
 
   // settle
   const { writeContract: settle, data: settleHash, isPending: settlePending, isError: settleError, error: settleErr } = useWriteContract()
-  const { isLoading: settleConfirming, isSuccess: settleSuccess } = useWaitForTransactionReceipt({ hash: settleHash })
+  const { isLoading: settleConfirming, isSuccess: settleSuccess } = useWaitForTransactionReceipt({ hash: settleHash, chainId: ARC_TESTNET_CHAIN_ID })
 
   // sellerClose
   const { writeContract: sellerClose, data: closeHash, isPending: closePending } = useWriteContract()
-  const { isLoading: closeConfirming, isSuccess: closeSuccess } = useWaitForTransactionReceipt({ hash: closeHash })
+  const { isLoading: closeConfirming, isSuccess: closeSuccess } = useWaitForTransactionReceipt({ hash: closeHash, chainId: ARC_TESTNET_CHAIN_ID })
 
   // refund
   const { writeContract: refund, data: refundHash, isPending: refundPending } = useWriteContract()
-  const { isLoading: refundConfirming, isSuccess: refundSuccess } = useWaitForTransactionReceipt({ hash: refundHash })
+  const { isLoading: refundConfirming, isSuccess: refundSuccess } = useWaitForTransactionReceipt({ hash: refundHash, chainId: ARC_TESTNET_CHAIN_ID })
 
   const deal = rawDeal as OnchainDeal | undefined
   const [deposit, settled, refunded] = balanceData as [bigint, bigint, bigint, bigint] ?? [0n, 0n, 0n, 0n]
@@ -143,6 +144,9 @@ export function DealCard({ dealId }: { dealId: bigint }) {
 
   async function handleSign() {
     if (!acceptPayload) return
+    if (chainId !== ARC_TESTNET_CHAIN_ID) {
+      try { await switchChainAsync({ chainId: ARC_TESTNET_CHAIN_ID }) } catch { return }
+    }
     try {
       const sig = await signTypedDataAsync({
         domain: {
@@ -181,7 +185,10 @@ export function DealCard({ dealId }: { dealId: bigint }) {
     }
   }
 
-  function handleSellerClose() {
+  async function handleSellerClose() {
+    if (chainId !== ARC_TESTNET_CHAIN_ID) {
+      try { await switchChainAsync({ chainId: ARC_TESTNET_CHAIN_ID }) } catch { return }
+    }
     sellerClose({
       address: METERED_ESCROW.address,
       abi: METERED_ESCROW.abi,
@@ -191,7 +198,10 @@ export function DealCard({ dealId }: { dealId: bigint }) {
     })
   }
 
-  function handleRefund() {
+  async function handleRefund() {
+    if (chainId !== ARC_TESTNET_CHAIN_ID) {
+      try { await switchChainAsync({ chainId: ARC_TESTNET_CHAIN_ID }) } catch { return }
+    }
     refund({
       address: METERED_ESCROW.address,
       abi: METERED_ESCROW.abi,
@@ -314,7 +324,7 @@ export function DealCard({ dealId }: { dealId: bigint }) {
           {/* Seller close */}
           {canClose && (
             <TxButton
-              onClick={handleSellerClose}
+              onClick={() => { void handleSellerClose() }}
               isPending={closePending}
               isConfirming={closeConfirming}
               label="Close Term Early (Seller)"
@@ -331,7 +341,7 @@ export function DealCard({ dealId }: { dealId: bigint }) {
           {/* Refund */}
           {canRefund && remaining > 0n && (
             <TxButton
-              onClick={handleRefund}
+              onClick={() => { void handleRefund() }}
               isPending={refundPending}
               isConfirming={refundConfirming}
               label={`Refund ${fmt(remaining)} USDC to buyer`}

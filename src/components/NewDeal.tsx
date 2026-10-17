@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSignTypedData } from 'wagmi'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSignTypedData, useSwitchChain } from 'wagmi'
 import { erc20Abi, type Address } from 'viem'
 import { METERED_ESCROW, USDC_ADDRESS, ARC_TESTNET_CHAIN_ID, ARC_TESTNET_EXPLORER } from '@/contract'
 import { TxButton } from './TxButton'
@@ -28,6 +28,7 @@ type Step = 'form' | 'seller-sign' | 'buyer-sign' | 'approve' | 'fund' | 'done'
 export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) {
   const { address, chainId } = useAccount()
   const wrongChain = chainId !== ARC_TESTNET_CHAIN_ID
+  const { switchChainAsync } = useSwitchChain()
 
   const [form, setForm] = useState(() => ({
     dealId: String(Date.now()),
@@ -50,11 +51,11 @@ export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) 
   // Approve USDC
   const { writeContract: approveUsdc, data: approveHash, isPending: approvePending } = useWriteContract()
   const { isLoading: approveConfirming, isSuccess: approveSuccess, isError: approveError, error: approveErr } =
-    useWaitForTransactionReceipt({ hash: approveHash })
+    useWaitForTransactionReceipt({ hash: approveHash, chainId: ARC_TESTNET_CHAIN_ID })
 
   // Fund deal
   const { writeContract: fundDeal, data: fundHash, isPending: fundPending, isError: fundError, error: fundErr } = useWriteContract()
-  const { isLoading: fundConfirming, isSuccess: fundSuccess } = useWaitForTransactionReceipt({ hash: fundHash })
+  const { isLoading: fundConfirming, isSuccess: fundSuccess } = useWaitForTransactionReceipt({ hash: fundHash, chainId: ARC_TESTNET_CHAIN_ID })
 
   const prepaidMicro = (() => {
     try { return parseAmount(ARC_TESTNET_CHAIN_ID, form.prepaid).raw }
@@ -173,7 +174,10 @@ export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) 
     }
   }
 
-  function handleApprove() {
+  async function handleApprove() {
+    if (chainId !== ARC_TESTNET_CHAIN_ID) {
+      try { await switchChainAsync({ chainId: ARC_TESTNET_CHAIN_ID }) } catch { return }
+    }
     approveUsdc({
       address: USDC_ADDRESS,
       abi: erc20Abi,
@@ -183,9 +187,12 @@ export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) 
     })
   }
 
-  function handleFund() {
+  async function handleFund() {
     const t = termsData
     if (!t || !sellerSig || !buyerSig) return
+    if (chainId !== ARC_TESTNET_CHAIN_ID) {
+      try { await switchChainAsync({ chainId: ARC_TESTNET_CHAIN_ID }) } catch { return }
+    }
     fundDeal({
       address: METERED_ESCROW.address,
       abi: METERED_ESCROW.abi,
@@ -297,7 +304,7 @@ export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) 
             </div>
           </div>
           <TxButton
-            onClick={handleApprove}
+            onClick={() => { void handleApprove() }}
             isPending={approvePending}
             isConfirming={approveConfirming}
             label="Approve USDC"
@@ -318,7 +325,7 @@ export function NewDeal({ onCreated }: { onCreated: (dealId: bigint) => void }) 
             </div>
           </div>
           <TxButton
-            onClick={handleFund}
+            onClick={() => { void handleFund() }}
             isPending={fundPending}
             isConfirming={fundConfirming}
             label="Fund Deal"
