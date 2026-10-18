@@ -35,7 +35,7 @@
 
 body {
   margin: 0;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', 'DM Sans', sans-serif;
   background: var(--bg);
   color: var(--ink);
   min-height: 100dvh;
@@ -43,7 +43,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.display { font-family: 'Space Grotesk', sans-serif; }
+.display { font-family: 'Instrument Serif', Georgia, serif; }
 .mono    { font-family: 'JetBrains Mono', Menlo, monospace; font-size: 0.85em; }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
