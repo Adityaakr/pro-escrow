@@ -6,22 +6,36 @@ import { TxButton } from './TxButton'
 import { TxReceipt } from './TxReceipt'
 import { STREAM_TYPES, encodeStreamId, getStreamType, parseUSDC, fmtUSDC, type StreamType } from '@/streams'
 import { toast } from 'sonner'
-import { ArrowLeft, Briefcase, TrendingUp, CheckSquare, ExternalLink, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Briefcase, TrendingUp, Flag, ExternalLink, ChevronRight, CheckCircle2 } from 'lucide-react'
 
 function getUnixNow() { return Math.floor(Date.now() / 1000) }
 
 const TYPE_ICON: Record<StreamType, React.ReactNode> = {
-  payroll: <Briefcase className="size-5" />,
-  vesting: <TrendingUp className="size-5" />,
-  escrow:  <CheckSquare className="size-5" />,
+  payroll: <Briefcase size={18} />,
+  vesting: <TrendingUp size={18} />,
+  escrow:  <Flag size={18} />,
 }
 const TYPE_COLOR: Record<StreamType, string> = {
   payroll: 'var(--blue)',
   vesting: 'var(--purple)',
   escrow:  'var(--amber)',
 }
+const TYPE_BG: Record<StreamType, string> = {
+  payroll: 'var(--blue-light)',
+  vesting: 'var(--purple-light)',
+  escrow:  'var(--amber-light)',
+}
 
 type WizStep = 'type' | 'form' | 'sign-recipient' | 'sign-funder' | 'approve' | 'fund' | 'done'
+
+const STEP_LABELS: Partial<Record<WizStep, string>> = {
+  'form': 'Details',
+  'sign-recipient': 'Recipient signs',
+  'sign-funder': 'Funder signs',
+  'approve': 'Approve USDC',
+  'fund': 'Fund stream',
+  'done': 'Done',
+}
 
 interface CreateStreamProps {
   initialType: StreamType | null
@@ -35,7 +49,7 @@ function Field({ label, value, onChange, placeholder, type = 'text', hint }: {
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)', letterSpacing: '0.07em' }}>
+      <label style={{ display: 'block', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted)', marginBottom: 6 }}>
         {label}
       </label>
       <input
@@ -43,32 +57,67 @@ function Field({ label, value, onChange, placeholder, type = 'text', hint }: {
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         type={type}
-        className="w-full rounded-lg px-3 py-2.5 text-sm font-medium"
-        style={{ background: 'var(--surface-muted)', color: 'var(--ink)', border: '1px solid var(--border)' }}
+        style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface-muted)', fontSize: 13, color: 'var(--ink)', boxSizing: 'border-box' }}
       />
-      {hint && <p className="mt-1 text-xs" style={{ color: 'var(--subtle)' }}>{hint}</p>}
-    </div>
-  )
-}
-
-function StepIndicator({ current, steps }: { current: WizStep; steps: WizStep[] }) {
-  const idx = steps.indexOf(current)
-  return (
-    <div className="flex items-center gap-1">
-      {steps.map((s, i) => (
-        <div key={s} className="flex items-center gap-1">
-          <div
-            className="size-2 rounded-full"
-            style={{ background: i < idx ? 'var(--green)' : i === idx ? 'var(--blue)' : 'var(--border-strong)' }}
-          />
-          {i < steps.length - 1 && <div className="w-4 h-px" style={{ background: 'var(--border)' }} />}
-        </div>
-      ))}
+      {hint && <p style={{ fontSize: 11, color: 'var(--subtle)', margin: '5px 0 0' }}>{hint}</p>}
     </div>
   )
 }
 
 const WIZ_STEPS: WizStep[] = ['type', 'form', 'sign-recipient', 'sign-funder', 'approve', 'fund', 'done']
+
+function StepBar({ current, typeColor }: { current: WizStep; typeColor: string }) {
+  const steps = WIZ_STEPS.slice(1)
+  const idx = steps.indexOf(current)
+  if (idx < 0) return null
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      {steps.map((s, i) => {
+        const done = i < idx
+        const active = i === idx
+        return (
+          <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{
+              width: active ? 'auto' : 20, height: 20, minWidth: 20,
+              borderRadius: active ? 10 : '50%',
+              background: done ? 'var(--green)' : active ? typeColor : 'var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: active ? '0 8px' : 0,
+              transition: 'all 0.2s',
+            }}>
+              {done
+                ? <CheckCircle2 size={11} style={{ color: 'white' }} />
+                : <span style={{ fontSize: 10, fontWeight: 700, color: active ? 'white' : 'var(--muted)' }}>
+                    {active ? STEP_LABELS[s] : i + 1}
+                  </span>
+              }
+            </div>
+            {i < steps.length - 1 && <div style={{ width: 16, height: 1, background: done ? 'var(--green)' : 'var(--border)' }} />}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function WizCard({ children, typeColor, step, onBack }: { children: React.ReactNode; typeColor: string; step: WizStep; onBack?: () => void }) {
+  return (
+    <div style={{ maxWidth: 560 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        {onBack
+          ? <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>
+              <ArrowLeft size={14} /> Back
+            </button>
+          : <div />
+        }
+        <StepBar current={step} typeColor={typeColor} />
+      </div>
+      <div style={{ background: 'var(--bg-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '24px' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
 
 export function CreateStream({ initialType, onCreated, onBack }: CreateStreamProps) {
   const { address, chainId } = useAccount()
@@ -78,49 +127,40 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   const [streamType, setStreamType] = useState<StreamType | null>(initialType)
   const [step, setStep] = useState<WizStep>(initialType ? 'form' : 'type')
   const [recipientSig, setRecipientSig] = useState('')
-  const [funderSig, setFunderSig] = useState('')
-  const [termsData, setTermsData] = useState<Record<string, unknown> | null>(null)
+  const [funderSig, setFunderSig]       = useState('')
+  const [termsData, setTermsData]       = useState<Record<string, unknown> | null>(null)
 
   const meta = streamType ? getStreamType(streamType) : null
-  const d = meta?.defaults
+  const d    = meta?.defaults
 
   const [form, setForm] = useState(() => {
     const defaults = d ?? getStreamType('escrow').defaults
     return {
-      title: defaults.title,
-      recipient: '',
-      payee: '',
-      unitPrice: defaults.unitPrice,
-      maxUnits:  defaults.maxUnits,
-      prepaid:   defaults.prepaid,
-      termDays:  defaults.termDays,
-      graceDays: defaults.graceDays,
+      title: defaults.title, recipient: '', payee: '',
+      unitPrice: defaults.unitPrice, maxUnits: defaults.maxUnits,
+      prepaid: defaults.prepaid, termDays: defaults.termDays, graceDays: defaults.graceDays,
     }
   })
 
   const { signTypedDataAsync } = useSignTypedData()
-
   const { writeContract: approveUsdc, data: approveHash, isPending: approvePending } = useWriteContract()
   const { isLoading: approveConfirming, isSuccess: approveSuccess, isError: approveError, error: approveErr } =
     useWaitForTransactionReceipt({ hash: approveHash, chainId: ARC_TESTNET_CHAIN_ID })
-
   const { writeContract: fundDeal, data: fundHash, isPending: fundPending, isError: fundError, error: fundErr } = useWriteContract()
   const { isLoading: fundConfirming, isSuccess: fundSuccess } = useWaitForTransactionReceipt({ hash: fundHash, chainId: ARC_TESTNET_CHAIN_ID })
 
-  const prepaidMicro = parseUSDC(form.prepaid)
+  const prepaidMicro  = parseUSDC(form.prepaid)
   const unitPriceMicro = parseUSDC(form.unitPrice)
-
-  // Compute the deal ID once when we enter form step
   const [dealId] = useState(() => streamType ? encodeStreamId(streamType) : encodeStreamId('escrow'))
 
   const termsTypes = {
     Terms: [
-      { name: 'dealId',    type: 'uint256' }, { name: 'buyer',    type: 'address' },
-      { name: 'seller',    type: 'address' }, { name: 'payee',    type: 'address' },
+      { name: 'dealId', type: 'uint256' }, { name: 'buyer', type: 'address' },
+      { name: 'seller', type: 'address' }, { name: 'payee', type: 'address' },
       { name: 'unitPrice', type: 'uint256' }, { name: 'maxUnits', type: 'uint256' },
-      { name: 'prepaid',   type: 'uint256' }, { name: 'end',      type: 'uint64'  },
-      { name: 'grace',     type: 'uint64'  }, { name: 'nonce',    type: 'uint256' },
-      { name: 'expiry',    type: 'uint64'  },
+      { name: 'prepaid', type: 'uint256' }, { name: 'end', type: 'uint64' },
+      { name: 'grace', type: 'uint64' }, { name: 'nonce', type: 'uint256' },
+      { name: 'expiry', type: 'uint64' },
     ],
   }
   const domain = { name: 'MeteredEscrow', version: '1', chainId: ARC_TESTNET_CHAIN_ID, verifyingContract: METERED_ESCROW.address }
@@ -128,17 +168,12 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   async function handleRecipientSign() {
     const now = getUnixNow()
     const t: Record<string, unknown> = {
-      dealId,
-      buyer:     address,
-      seller:    form.recipient,
-      payee:     (form.payee || form.recipient),
-      unitPrice: unitPriceMicro,
-      maxUnits:  BigInt(form.maxUnits),
-      prepaid:   prepaidMicro,
-      end:       BigInt(now + parseInt(form.termDays) * 86400),
-      grace:     BigInt(parseInt(form.graceDays) * 86400),
-      nonce:     0n,
-      expiry:    BigInt(now + 3600),
+      dealId, buyer: address, seller: form.recipient,
+      payee: form.payee || form.recipient, unitPrice: unitPriceMicro,
+      maxUnits: BigInt(form.maxUnits), prepaid: prepaidMicro,
+      end: BigInt(now + parseInt(form.termDays) * 86400),
+      grace: BigInt(parseInt(form.graceDays) * 86400),
+      nonce: 0n, expiry: BigInt(now + 3600),
     }
     setTermsData(t)
     try {
@@ -168,49 +203,50 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   }
 
   if (approveSuccess && step === 'approve') setStep('fund')
-  if (fundSuccess && step === 'fund' && termsData) {
-    setStep('done')
-    onCreated(termsData.dealId as bigint)
-  }
+  if (fundSuccess && step === 'fund' && termsData) { setStep('done'); onCreated(termsData.dealId as bigint) }
 
   const typeColor = streamType ? TYPE_COLOR[streamType] : 'var(--accent)'
 
-  // ── Type picker ───────────────────────────────────────────────────────────────
+  // TYPE PICKER
   if (step === 'type') {
     return (
-      <div className="max-w-xl space-y-4">
-        <div className="flex items-center gap-3 mb-2">
-          <button onClick={onBack} className="flex items-center gap-1 text-sm" style={{ color: 'var(--muted)' }}>
-            <ArrowLeft className="size-4" /> Back
+      <div style={{ maxWidth: 560 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>
+            <ArrowLeft size={14} /> Back
           </button>
-          <h2 className="display text-xl font-bold" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>What kind of stream?</h2>
+          <h2 style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 20, color: 'var(--ink)', margin: 0, fontWeight: 400 }}>Choose a stream type</h2>
         </div>
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {STREAM_TYPES.map(t => (
             <button
               key={t.id}
               onClick={() => { setStreamType(t.id); setStep('form') }}
-              className="group w-full flex items-start gap-4 rounded-xl p-5 text-left transition-all hover:shadow-sm"
-              style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '16px 18px',
+                background: 'var(--bg-white)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                textAlign: 'left', cursor: 'pointer',
+                transition: 'border-color 0.12s, box-shadow 0.12s',
+              }}
+              onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border-strong)'; el.style.boxShadow = 'var(--shadow-sm)' }}
+              onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border)'; el.style.boxShadow = 'none' }}
             >
-              <div className="flex size-10 items-center justify-center rounded-xl shrink-0" style={{ background: TYPE_COLOR[t.id] + '14', color: TYPE_COLOR[t.id] }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: TYPE_BG[t.id], color: TYPE_COLOR[t.id], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {TYPE_ICON[t.id]}
               </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{t.label}</p>
-                  <ChevronRight className="size-4 opacity-30 group-hover:opacity-70 transition-opacity" style={{ color: 'var(--muted)' }} />
-                </div>
-                <p className="text-xs font-medium mt-0.5" style={{ color: TYPE_COLOR[t.id] }}>{t.tagline}</p>
-                <p className="text-xs mt-1.5" style={{ color: 'var(--muted)', lineHeight: '1.5' }}>{t.description}</p>
-                <div className="mt-2 flex gap-3 text-xs tabular-nums" style={{ color: 'var(--subtle)' }}>
-                  <span>Default: {t.defaults.maxUnits} {t.unitLabel}s</span>
-                  <span>·</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 2 }}>{t.label}</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{t.description}</div>
+                <div style={{ display: 'flex', gap: 12, marginTop: 6, fontSize: 11, color: 'var(--subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
+                  <span>{t.defaults.maxUnits} {t.unitLabel}s</span>
                   <span>${t.defaults.unitPrice}/{t.periodLabel}</span>
-                  <span>·</span>
                   <span>{t.defaults.termDays}d term</span>
                 </div>
               </div>
+              <ChevronRight size={16} style={{ color: 'var(--subtle)', flexShrink: 0 }} />
             </button>
           ))}
         </div>
@@ -220,204 +256,174 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
 
   if (!meta || !streamType) return null
 
-  // ── Form ──────────────────────────────────────────────────────────────────────
+  // FORM
   if (step === 'form') {
     return (
-      <div className="max-w-2xl space-y-5">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setStep('type')} className="flex items-center gap-1 text-sm" style={{ color: 'var(--muted)' }}>
-            <ArrowLeft className="size-4" /> Back
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="flex size-7 items-center justify-center rounded-lg" style={{ background: typeColor + '14', color: typeColor }}>
-              {TYPE_ICON[streamType]}
-            </div>
-            <h2 className="display text-xl font-bold" style={{ color: 'var(--ink)', letterSpacing: '-0.03em' }}>
-              New {meta.label} stream
-            </h2>
+      <WizCard typeColor={typeColor} step={step} onBack={() => setStep('type')}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: TYPE_BG[streamType], color: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {TYPE_ICON[streamType]}
           </div>
-          <div className="ml-auto"><StepIndicator current={step} steps={WIZ_STEPS.slice(1)} /></div>
+          <h2 style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 18, color: 'var(--ink)', margin: 0, fontWeight: 400 }}>New {meta.label} stream</h2>
         </div>
 
-        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-          <Field label="Stream title" value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} placeholder={meta.defaults.title} hint="For your reference only — not stored on-chain" />
-          <Field label={meta.defaults.recipientLabel} value={form.recipient} onChange={v => setForm(f => ({ ...f, recipient: v }))} placeholder="0x…" hint={`The ${meta.unitLabel} recipient's wallet address`} />
-          <Field label="Payee address (optional)" value={form.payee} onChange={v => setForm(f => ({ ...f, payee: v }))} placeholder="Defaults to recipient" hint="Where USDC is sent — useful for multi-sig" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Field label="Stream title" value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} placeholder={meta.defaults.title} hint="For your reference only, not stored on-chain" />
+          <Field label={meta.defaults.recipientLabel} value={form.recipient} onChange={v => setForm(f => ({ ...f, recipient: v }))} placeholder="0x..." />
+          <Field label="Payee address (optional)" value={form.payee} onChange={v => setForm(f => ({ ...f, payee: v }))} placeholder="Defaults to recipient" hint="Useful for multi-sig payees" />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <Field
-              label={streamType === 'payroll' ? 'Monthly salary (USDC)' : streamType === 'vesting' ? 'Per-tranche amount (USDC)' : 'Per-milestone amount (USDC)'}
-              value={form.unitPrice}
-              onChange={v => setForm(f => ({ ...f, unitPrice: v }))}
-              placeholder={meta.defaults.unitPrice}
-              type="number"
+              label={streamType === 'payroll' ? 'Monthly salary (USDC)' : streamType === 'vesting' ? 'Per tranche (USDC)' : 'Per milestone (USDC)'}
+              value={form.unitPrice} onChange={v => setForm(f => ({ ...f, unitPrice: v }))} type="number"
             />
             <Field
-              label={streamType === 'payroll' ? 'Number of pay periods' : streamType === 'vesting' ? 'Number of tranches' : 'Number of milestones'}
-              value={form.maxUnits}
-              onChange={v => setForm(f => ({ ...f, maxUnits: v }))}
-              placeholder={meta.defaults.maxUnits}
-              type="number"
+              label={streamType === 'payroll' ? 'Pay periods' : streamType === 'vesting' ? 'Tranches' : 'Milestones'}
+              value={form.maxUnits} onChange={v => setForm(f => ({ ...f, maxUnits: v }))} type="number"
             />
           </div>
 
           <Field
-            label="Total locked (USDC)"
-            value={form.prepaid}
-            onChange={v => setForm(f => ({ ...f, prepaid: v }))}
-            placeholder={meta.defaults.prepaid}
-            type="number"
-            hint={`= ${form.maxUnits} × $${form.unitPrice} = ${fmtUSDC(parseUSDC(form.unitPrice) * BigInt(parseInt(form.maxUnits) || 0))}`}
+            label="Total to lock (USDC)"
+            value={form.prepaid} onChange={v => setForm(f => ({ ...f, prepaid: v }))} type="number"
+            hint={`${form.maxUnits} x $${form.unitPrice} = ${fmtUSDC(parseUSDC(form.unitPrice) * BigInt(parseInt(form.maxUnits) || 0))}`}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <Field label="Term length (days)" value={form.termDays} onChange={v => setForm(f => ({ ...f, termDays: v }))} type="number" />
-            <Field label="Grace period (days)" value={form.graceDays} onChange={v => setForm(f => ({ ...f, graceDays: v }))} type="number" hint="Days after term before refund is available" />
+            <Field label="Grace period (days)" value={form.graceDays} onChange={v => setForm(f => ({ ...f, graceDays: v }))} type="number" hint="Days after term before reclaim" />
           </div>
 
           {/* Summary */}
-          <div className="rounded-lg p-4 space-y-1.5" style={{ background: 'var(--surface-muted)' }}>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--subtle)', letterSpacing: '0.08em' }}>STREAM SUMMARY</p>
-            {[
-              ['Type', meta.label],
-              [meta.defaults.payerLabel, address ? address.slice(0, 10) + '…' : '—'],
-              [meta.defaults.recipientLabel, form.recipient ? form.recipient.slice(0, 10) + '…' : '(not set)'],
-              ['Total locked', fmtUSDC(prepaidMicro)],
-              [streamType === 'payroll' ? 'Monthly salary' : streamType === 'vesting' ? 'Per tranche' : 'Per milestone', fmtUSDC(unitPriceMicro)],
-              [streamType === 'payroll' ? 'Pay periods' : streamType === 'vesting' ? 'Tranches' : 'Milestones', form.maxUnits],
-            ].map(([k, v]) => (
-              <div key={k} className="flex items-center justify-between text-xs">
-                <span style={{ color: 'var(--muted)' }}>{k}</span>
-                <span className="font-medium" style={{ color: 'var(--ink)' }}>{v}</span>
-              </div>
-            ))}
+          <div style={{ background: 'var(--surface-muted)', borderRadius: 'var(--radius-sm)', padding: '14px 16px' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--subtle)', margin: '0 0 10px' }}>Summary</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[
+                [meta.defaults.payerLabel.split(' ')[0], address ? address.slice(0, 10) + '...' : 'Not connected'],
+                [meta.defaults.recipientLabel.split(' ')[0], form.recipient ? form.recipient.slice(0, 10) + '...' : 'Not set'],
+                ['Total locked', fmtUSDC(prepaidMicro)],
+                [streamType === 'payroll' ? 'Per month' : streamType === 'vesting' ? 'Per tranche' : 'Per milestone', fmtUSDC(unitPriceMicro)],
+                [streamType === 'payroll' ? 'Pay periods' : streamType === 'vesting' ? 'Tranches' : 'Milestones', form.maxUnits],
+              ].map(([k, v]) => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{k}</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{v}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <TxButton
             onClick={() => setStep('sign-recipient')}
             disabled={wrongChain || !address || !form.recipient || prepaidMicro === 0n}
-            label={`Continue — sign as ${meta.defaults.recipientLabel.split(' ')[0].toLowerCase()}`}
+            label="Continue"
           />
-          {wrongChain && <p className="text-xs text-center" style={{ color: 'var(--red)' }}>Switch to Arc Testnet to continue</p>}
+          {wrongChain && <p style={{ fontSize: 12, textAlign: 'center', color: 'var(--red)' }}>Switch to Arc Testnet to continue</p>}
         </div>
-      </div>
+      </WizCard>
     )
   }
 
-  // ── Sign recipient ────────────────────────────────────────────────────────────
+  // SIGN RECIPIENT
   if (step === 'sign-recipient') {
     return (
-      <div className="max-w-lg space-y-4">
-        <button onClick={() => setStep('form')} className="flex items-center gap-1 text-sm" style={{ color: 'var(--muted)' }}>
-          <ArrowLeft className="size-4" /> Back
-        </button>
-        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: typeColor }}>1</div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>{meta.defaults.recipientLabel} signs</p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>Commits to the stream terms on-chain via EIP-712</p>
-            </div>
+      <WizCard typeColor={typeColor} step={step} onBack={() => setStep('form')}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>1</div>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{meta.defaults.recipientLabel} signs the terms</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '3px 0 0' }}>EIP-712 typed signature commits to the stream terms</p>
           </div>
-          <div className="rounded-lg p-3 text-xs" style={{ background: 'var(--surface-muted)', color: 'var(--muted)' }}>
-            In production, the {meta.defaults.recipientLabel.toLowerCase()} signs first and sends their signature to the {meta.defaults.payerLabel.toLowerCase()}. Here you can sign as both parties for testing.
-          </div>
-          <TxButton onClick={() => { void handleRecipientSign() }} label={`Sign as ${meta.defaults.recipientLabel.split(' ')[0]}`} />
         </div>
-      </div>
+        <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: 'var(--surface-muted)', fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>
+          In production, the recipient signs first and sends their signature to the funder. You can sign as both parties here for testing.
+        </div>
+        <TxButton onClick={() => { void handleRecipientSign() }} label={`Sign as ${meta.defaults.recipientLabel.split(' ')[0]}`} />
+      </WizCard>
     )
   }
 
-  // ── Sign funder ───────────────────────────────────────────────────────────────
+  // SIGN FUNDER
   if (step === 'sign-funder') {
     return (
-      <div className="max-w-lg space-y-4">
-        <button onClick={() => setStep('sign-recipient')} className="flex items-center gap-1 text-sm" style={{ color: 'var(--muted)' }}>
-          <ArrowLeft className="size-4" /> Back
-        </button>
-        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: typeColor }}>2</div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>{meta.defaults.payerLabel} signs</p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>Confirms you agree to the stream terms</p>
-            </div>
+      <WizCard typeColor={typeColor} step={step} onBack={() => setStep('sign-recipient')}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>2</div>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{meta.defaults.payerLabel} signs the terms</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '3px 0 0' }}>Confirms you agree to the stream terms before funding</p>
           </div>
-          <TxButton onClick={() => { void handleFunderSign() }} label={`Sign as ${meta.defaults.payerLabel.split(' ')[0]}`} />
         </div>
-      </div>
+        <TxButton onClick={() => { void handleFunderSign() }} label={`Sign as ${meta.defaults.payerLabel.split(' ')[0]}`} />
+      </WizCard>
     )
   }
 
-  // ── Approve ───────────────────────────────────────────────────────────────────
+  // APPROVE
   if (step === 'approve') {
     return (
-      <div className="max-w-lg space-y-4">
-        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: typeColor }}>3</div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Approve USDC</p>
-              <p className="text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
-                Allow the contract to pull {fmtUSDC(prepaidMicro)} from your wallet
-              </p>
-            </div>
+      <WizCard typeColor={typeColor} step={step}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>3</div>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Approve USDC spend</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '3px 0 0' }}>Allow the contract to pull {fmtUSDC(prepaidMicro)} from your wallet</p>
           </div>
-          <TxButton onClick={() => { void handleApprove() }} isPending={approvePending} isConfirming={approveConfirming} label="Approve USDC" />
-          <TxReceipt hash={approveHash} isSuccess={approveSuccess} isError={approveError} error={approveErr} label="Approval" />
         </div>
-      </div>
+        <TxButton onClick={() => { void handleApprove() }} isPending={approvePending} isConfirming={approveConfirming} label="Approve USDC" />
+        <TxReceipt hash={approveHash} isSuccess={approveSuccess} isError={approveError} error={approveErr} label="Approval" />
+      </WizCard>
     )
   }
 
-  // ── Fund ──────────────────────────────────────────────────────────────────────
+  // FUND
   if (step === 'fund') {
     return (
-      <div className="max-w-lg space-y-4">
-        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: typeColor }}>4</div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Fund the stream</p>
-              <p className="text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
-                Lock {fmtUSDC(prepaidMicro)} USDC on-chain
-              </p>
-            </div>
+      <WizCard typeColor={typeColor} step={step}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>4</div>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Fund the stream</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '3px 0 0' }}>Lock {fmtUSDC(prepaidMicro)} USDC on-chain</p>
           </div>
-          <TxButton onClick={() => { void handleFund() }} isPending={fundPending} isConfirming={fundConfirming} label="Fund stream" />
-          <TxReceipt hash={fundHash} isSuccess={fundSuccess} isError={fundError} error={fundErr} label="Stream funding" />
         </div>
-      </div>
+        <TxButton onClick={() => { void handleFund() }} isPending={fundPending} isConfirming={fundConfirming} label="Fund stream" />
+        <TxReceipt hash={fundHash} isSuccess={fundSuccess} isError={fundError} error={fundErr} label="Stream funding" />
+      </WizCard>
     )
   }
 
-  // ── Done ──────────────────────────────────────────────────────────────────────
+  // DONE
   return (
-    <div className="max-w-lg">
-      <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-full" style={{ background: 'var(--green-light)' }}>
-            <CheckSquare className="size-5" style={{ color: 'var(--green)' }} />
+    <div style={{ maxWidth: 480 }}>
+      <div style={{ background: 'var(--bg-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '28px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--green-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CheckCircle2 size={22} style={{ color: 'var(--green)' }} />
           </div>
           <div>
-            <p className="text-sm font-bold" style={{ color: 'var(--green)' }}>{meta.label} stream created</p>
-            <p className="text-xs mono tabular-nums" style={{ color: 'var(--muted)' }}>Stream ID: {String(dealId).slice(-10)}</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--green)', margin: 0 }}>{meta.label} stream created</p>
+            <p style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: 'var(--muted)', margin: '3px 0 0' }}>ID: {String(dealId).slice(-12)}</p>
           </div>
         </div>
-        <div className="rounded-lg p-3 space-y-1.5" style={{ background: 'var(--surface-muted)' }}>
-          <div className="flex items-center justify-between text-xs">
-            <span style={{ color: 'var(--muted)' }}>Locked</span>
-            <span className="font-semibold tabular-nums" style={{ color: 'var(--ink)' }}>{fmtUSDC(prepaidMicro)}</span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span style={{ color: 'var(--muted)' }}>{streamType === 'payroll' ? 'Pay periods' : streamType === 'vesting' ? 'Tranches' : 'Milestones'}</span>
-            <span className="font-semibold" style={{ color: 'var(--ink)' }}>{form.maxUnits}</span>
-          </div>
+
+        <div style={{ background: 'var(--surface-muted)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', marginBottom: 16 }}>
+          {[
+            ['Locked', fmtUSDC(prepaidMicro)],
+            [streamType === 'payroll' ? 'Pay periods' : streamType === 'vesting' ? 'Tranches' : 'Milestones', form.maxUnits],
+            [streamType === 'payroll' ? 'Per month' : 'Per unit', fmtUSDC(unitPriceMicro)],
+          ].map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 12 }}>
+              <span style={{ color: 'var(--muted)' }}>{k}</span>
+              <span style={{ fontWeight: 600, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{v}</span>
+            </div>
+          ))}
         </div>
+
         {fundHash && (
           <a href={`${ARC_TESTNET_EXPLORER}/tx/${fundHash}`} target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--blue)' }}>
-            View funding transaction <ExternalLink className="size-3" />
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, color: 'var(--blue)' }}>
+            View on explorer <ExternalLink size={12} />
           </a>
         )}
       </div>

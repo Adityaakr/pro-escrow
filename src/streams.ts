@@ -99,8 +99,8 @@ export const STREAM_TYPES: StreamTypeMeta[] = [
   },
   {
     id: 'escrow',
-    label: 'Escrow',
-    tagline: 'Milestone-based project escrow',
+    label: 'Milestone Payments',
+    tagline: 'Pay per deliverable, not upfront',
     description: 'Lock a project budget and release it milestone by milestone. The client signs off each delivery. Remaining funds refund to the client after the deadline plus grace period.',
     unitLabel: 'milestone',
     periodLabel: 'milestone',
@@ -114,7 +114,7 @@ export const STREAM_TYPES: StreamTypeMeta[] = [
       graceDays: '14',
       recipientLabel: 'Contractor wallet',
       payerLabel: 'Client wallet',
-      title: 'Project milestone escrow',
+      title: 'Project milestone payments',
     },
   },
 ]

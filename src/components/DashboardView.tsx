@@ -3,17 +3,22 @@ import { useAccount, usePublicClient } from 'wagmi'
 import { parseAbiItem } from 'viem'
 import { METERED_ESCROW, ARC_TESTNET_CHAIN_ID } from '@/contract'
 import { fmtUSDC, decodeStreamType, getStreamType, type StreamType } from '@/streams'
-import { Briefcase, TrendingUp, CheckSquare, ArrowRight, Layers } from 'lucide-react'
+import { Briefcase, TrendingUp, Flag, ArrowRight, Plus, TrendingDown } from 'lucide-react'
 
-const TYPE_ICONS: Record<StreamType, React.ReactNode> = {
-  payroll: <Briefcase className="size-4" />,
-  vesting: <TrendingUp className="size-4" />,
-  escrow:  <CheckSquare className="size-4" />,
+const TYPE_ICON: Record<StreamType, React.ReactNode> = {
+  payroll: <Briefcase size={16} />,
+  vesting: <TrendingUp size={16} />,
+  escrow:  <Flag size={16} />,
 }
 const TYPE_COLOR: Record<StreamType, string> = {
   payroll: 'var(--blue)',
   vesting: 'var(--purple)',
   escrow:  'var(--amber)',
+}
+const TYPE_BG: Record<StreamType, string> = {
+  payroll: 'var(--blue-light)',
+  vesting: 'var(--purple-light)',
+  escrow:  'var(--amber-light)',
 }
 
 interface RecentStream {
@@ -22,7 +27,6 @@ interface RecentStream {
   deposit: bigint
   buyer: string
   seller: string
-  ts: number
 }
 
 interface DashboardViewProps {
@@ -57,14 +61,7 @@ export function DashboardView({ onCreateStream, onViewStreams, refreshTick }: Da
           const isParty = log.args.buyer?.toLowerCase() === address.toLowerCase() || log.args.seller?.toLowerCase() === address.toLowerCase()
           if (isParty && !seen.has(String(id))) {
             seen.add(String(id))
-            collected.push({
-              dealId: id,
-              type: decodeStreamType(id),
-              deposit: log.args.deposit ?? 0n,
-              buyer: log.args.buyer ?? '',
-              seller: log.args.seller ?? '',
-              ts: Number(log.blockNumber ?? 0n),
-            })
+            collected.push({ dealId: id, type: decodeStreamType(id), deposit: log.args.deposit ?? 0n, buyer: log.args.buyer ?? '', seller: log.args.seller ?? '' })
           }
         }
         if (!cancelled) setStreams(collected.slice(0, 20))
@@ -80,50 +77,96 @@ export function DashboardView({ onCreateStream, onViewStreams, refreshTick }: Da
   const byType = streams.reduce<Record<StreamType, number>>((acc, r) => { acc[r.type] = (acc[r.type] ?? 0) + 1; return acc }, { payroll: 0, vesting: 0, escrow: 0 })
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div style={{ maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+      {/* Hero stat row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {[
-          { label: 'Total locked', value: fmtUSDC(totalLocked), sub: `across ${streams.length} stream${streams.length !== 1 ? 's' : ''}`, icon: <Layers className="size-5" />, color: 'var(--blue)' },
-          { label: 'Payroll streams', value: String(byType.payroll), sub: 'active salary schedules', icon: <Briefcase className="size-5" />, color: 'var(--blue)' },
-          { label: 'Vesting grants', value: String(byType.vesting), sub: 'USDC grants vesting', icon: <TrendingUp className="size-5" />, color: 'var(--purple)' },
-        ].map(({ label, value, sub, icon, color }) => (
-          <div key={label} className="rounded-xl p-5" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--subtle)', letterSpacing: '0.08em' }}>{label}</p>
-              <div className="flex size-8 items-center justify-center rounded-lg" style={{ background: color + '14', color }}>
+          {
+            label: 'Total locked',
+            value: fmtUSDC(totalLocked),
+            sub: `across ${streams.length} stream${streams.length !== 1 ? 's' : ''}`,
+            icon: <TrendingDown size={16} />,
+            color: 'var(--ink)',
+            bg: 'var(--surface-muted)',
+          },
+          {
+            label: 'Payroll',
+            value: String(byType.payroll),
+            sub: 'active salary schedules',
+            icon: <Briefcase size={16} />,
+            color: 'var(--blue)',
+            bg: 'var(--blue-light)',
+          },
+          {
+            label: 'Vesting grants',
+            value: String(byType.vesting),
+            sub: 'USDC grants active',
+            icon: <TrendingUp size={16} />,
+            color: 'var(--purple)',
+            bg: 'var(--purple-light)',
+          },
+        ].map(({ label, value, sub, icon, color, bg }) => (
+          <div key={label} style={{
+            background: 'var(--bg-white)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            padding: '18px 20px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500 }}>{label}</span>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: bg, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {icon}
               </div>
             </div>
-            <p className="display text-2xl font-bold tabular-nums" style={{ color: 'var(--ink)', letterSpacing: '-0.02em' }}>{value}</p>
-            <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{sub}</p>
+            <div style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 28, color: 'var(--ink)', lineHeight: 1, letterSpacing: '-0.01em' }}>{value}</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 5 }}>{sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Quick-create buttons */}
+      {/* Quick create */}
       <div>
-        <h2 className="display text-sm font-semibold mb-3" style={{ color: 'var(--ink)' }}>Create a stream</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Create a stream</h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
           {(['payroll', 'vesting', 'escrow'] as StreamType[]).map((type) => {
             const meta = getStreamType(type)
-            const color = TYPE_COLOR[type]
-            const icon = TYPE_ICONS[type]
             return (
               <button
                 key={type}
                 onClick={() => onCreateStream(type)}
-                className="group flex items-start gap-3 rounded-xl p-4 text-left transition-all hover:shadow-sm"
-                style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  padding: '16px',
+                  background: 'var(--bg-white)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  textAlign: 'left',
+                  transition: 'box-shadow 0.12s, border-color 0.12s',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget
+                  el.style.boxShadow = 'var(--shadow-sm)'
+                  el.style.borderColor = 'var(--border-strong)'
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget
+                  el.style.boxShadow = 'none'
+                  el.style.borderColor = 'var(--border)'
+                }}
               >
-                <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg shrink-0" style={{ background: color + '14', color }}>
-                  {icon}
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: TYPE_BG[type], color: TYPE_COLOR[type], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {TYPE_ICON[type]}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>{meta.label}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{meta.tagline}</p>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 2 }}>{meta.label}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>{meta.tagline}</div>
                 </div>
-                <ArrowRight className="size-4 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--muted)' }} />
               </button>
             )
           })}
@@ -132,58 +175,82 @@ export function DashboardView({ onCreateStream, onViewStreams, refreshTick }: Da
 
       {/* Recent streams */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="display text-sm font-semibold" style={{ color: 'var(--ink)' }}>Recent streams</h2>
-          <button onClick={onViewStreams} className="text-xs font-medium" style={{ color: 'var(--blue)' }}>
-            View all
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Recent streams</h2>
+          <button onClick={onViewStreams} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--blue)', fontWeight: 500 }}>
+            View all <ArrowRight size={13} />
           </button>
         </div>
 
         {loading && (
-          <div className="rounded-xl p-8 text-center" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-            <p className="text-sm" style={{ color: 'var(--muted)' }}>Loading streams…</p>
+          <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
+            Loading streams...
           </div>
         )}
 
         {!loading && streams.length === 0 && (
-          <div className="rounded-xl p-10 text-center" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-            <div className="flex size-12 items-center justify-center rounded-xl mx-auto mb-3" style={{ background: 'var(--surface-muted)' }}>
-              <Layers className="size-6" style={{ color: 'var(--subtle)' }} />
+          <div style={{
+            background: 'var(--bg-white)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            padding: '48px 24px',
+            textAlign: 'center',
+          }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--surface-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <ArrowRight size={20} style={{ color: 'var(--subtle)' }} />
             </div>
-            <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>No streams yet</p>
-            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Create your first payroll, vesting, or escrow stream.</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: '0 0 4px' }}>No streams yet</p>
+            <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 20px' }}>Create your first payroll, vesting, or milestone stream.</p>
             <button
               onClick={() => onCreateStream()}
-              className="mt-4 rounded-lg px-4 py-2 text-sm font-semibold"
-              style={{ background: 'var(--accent)', color: 'var(--accent-fg)' }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '8px 16px', borderRadius: 'var(--radius-sm)',
+                background: 'var(--accent)', color: 'white',
+                fontSize: 13, fontWeight: 600,
+              }}
             >
-              Create first stream
+              <Plus size={14} /> Create first stream
             </button>
           </div>
         )}
 
         {!loading && streams.length > 0 && (
-          <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-            {streams.slice(0, 6).map((s, i) => {
+          <div style={{
+            background: 'var(--bg-white)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            overflow: 'hidden',
+          }}>
+            {streams.slice(0, 8).map((s, i) => {
               const meta = getStreamType(s.type)
-              const color = TYPE_COLOR[s.type]
-              const icon = TYPE_ICONS[s.type]
+              const isBuyer = s.buyer.toLowerCase() === address?.toLowerCase()
               return (
                 <div
                   key={String(s.dealId)}
-                  className="flex items-center gap-4 px-5 py-4"
-                  style={{ borderTop: i > 0 ? '1px solid var(--border)' : undefined }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '13px 16px',
+                    borderTop: i > 0 ? '1px solid var(--border)' : undefined,
+                  }}
                 >
-                  <div className="flex size-9 items-center justify-center rounded-lg shrink-0" style={{ background: color + '14', color }}>
-                    {icon}
+                  <div style={{ width: 34, height: 34, borderRadius: 8, background: TYPE_BG[s.type], color: TYPE_COLOR[s.type], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {TYPE_ICON[s.type]}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>{meta.label}</p>
-                    <p className="text-xs mono" style={{ color: 'var(--muted)' }}>#{String(s.dealId).slice(-8)}</p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{meta.label}</span>
+                      <span className={`badge badge-${s.type}`}>{isBuyer ? 'Payer' : 'Recipient'}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'JetBrains Mono, monospace', marginTop: 2 }}>
+                      #{String(s.dealId).slice(-10)}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold tabular-nums" style={{ color: 'var(--ink)' }}>{fmtUSDC(s.deposit)}</p>
-                    <span className={`badge badge-${s.type}`}>{meta.label}</span>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{fmtUSDC(s.deposit)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>locked</div>
                   </div>
                 </div>
               )

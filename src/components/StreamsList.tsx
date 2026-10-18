@@ -4,28 +4,29 @@ import { parseAbiItem } from 'viem'
 import { METERED_ESCROW, ARC_TESTNET_CHAIN_ID } from '@/contract'
 import { StreamDetail } from './StreamDetail'
 import { decodeStreamType, getStreamType, fmtUSDC, type StreamType } from '@/streams'
-import { Loader2, Inbox, Plus, Search, Briefcase, TrendingUp, CheckSquare } from 'lucide-react'
+import { Briefcase, TrendingUp, Flag, Plus, Search, Inbox, Loader2 } from 'lucide-react'
 
 const TYPE_ICON: Record<StreamType, React.ReactNode> = {
-  payroll: <Briefcase className="size-4" />,
-  vesting: <TrendingUp className="size-4" />,
-  escrow:  <CheckSquare className="size-4" />,
+  payroll: <Briefcase size={14} />,
+  vesting: <TrendingUp size={14} />,
+  escrow:  <Flag size={14} />,
 }
 const TYPE_COLOR: Record<StreamType, string> = {
   payroll: 'var(--blue)',
   vesting: 'var(--purple)',
   escrow:  'var(--amber)',
 }
+const TYPE_BG: Record<StreamType, string> = {
+  payroll: 'var(--blue-light)',
+  vesting: 'var(--purple-light)',
+  escrow:  'var(--amber-light)',
+}
+
+interface StreamEntry { dealId: bigint; type: StreamType; deposit: bigint }
 
 interface StreamsListProps {
   refreshTrigger: number
   onNewStream: (type?: StreamType) => void
-}
-
-interface StreamEntry {
-  dealId: bigint
-  type: StreamType
-  deposit: bigint
 }
 
 export function StreamsList({ refreshTrigger, onNewStream }: StreamsListProps) {
@@ -35,8 +36,8 @@ export function StreamsList({ refreshTrigger, onNewStream }: StreamsListProps) {
   const [loading, setLoading] = useState(false)
   const [manualId, setManualId] = useState('')
   const [selectedId, setSelectedId] = useState<bigint | null>(null)
-  const hasAutoSelected = useRef(false)
   const [filterType, setFilterType] = useState<StreamType | 'all'>('all')
+  const hasAutoSelected = useRef(false)
 
   useEffect(() => {
     if (!address || !publicClient) return
@@ -86,118 +87,132 @@ export function StreamsList({ refreshTrigger, onNewStream }: StreamsListProps) {
   }
 
   const filtered = filterType === 'all' ? entries : entries.filter(e => e.type === filterType)
-
   if (!address) return null
 
   return (
-    <div className="flex gap-6 min-h-0" style={{ alignItems: 'flex-start' }}>
-      {/* ── Left panel: stream list ── */}
-      <div className="w-72 shrink-0 space-y-2">
+    <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', minHeight: 0 }}>
+
+      {/* List panel */}
+      <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="display text-sm font-semibold" style={{ color: 'var(--ink)' }}>Your streams</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>Your streams</span>
           <button
             onClick={() => onNewStream()}
-            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white"
-            style={{ background: 'var(--accent)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 600 }}
           >
-            <Plus className="size-3" /> New
+            <Plus size={12} /> New
           </button>
         </div>
 
         {/* Search */}
-        <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-          <Search className="size-3.5 shrink-0" style={{ color: 'var(--subtle)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', background: 'var(--bg-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+          <Search size={13} style={{ color: 'var(--subtle)', flexShrink: 0 }} />
           <input
             value={manualId}
             onChange={e => setManualId(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addManualId()}
-            placeholder="Lookup stream ID…"
-            className="flex-1 bg-transparent text-xs outline-none"
-            style={{ color: 'var(--ink)' }}
+            placeholder="Lookup by ID..."
+            style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 12, color: 'var(--ink)' }}
           />
         </div>
 
         {/* Type filter */}
-        <div className="flex gap-1.5 flex-wrap">
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {(['all', 'payroll', 'vesting', 'escrow'] as const).map(t => (
             <button
               key={t}
               onClick={() => setFilterType(t)}
-              className="rounded-full px-2.5 py-1 text-xs font-medium transition-colors"
               style={{
-                background: filterType === t ? 'var(--accent)' : 'var(--bg-white)',
-                color: filterType === t ? 'var(--accent-fg)' : 'var(--muted)',
+                padding: '4px 10px',
+                borderRadius: 20,
+                fontSize: 11,
+                fontWeight: 600,
                 border: '1px solid var(--border)',
+                background: filterType === t ? 'var(--accent)' : 'var(--bg-white)',
+                color: filterType === t ? 'white' : 'var(--muted)',
+                cursor: 'pointer',
               }}
             >
-              {t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === 'all' ? 'All' : t === 'escrow' ? 'Milestones' : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
 
+        {/* List */}
         {loading && (
-          <div className="flex items-center gap-2 py-3 px-1" style={{ color: 'var(--muted)' }}>
-            <Loader2 className="size-3.5 animate-spin" /><span className="text-xs">Loading…</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '12px 4px', color: 'var(--muted)', fontSize: 13 }}>
+            <Loader2 size={13} className="animate-spin" /> Loading...
           </div>
         )}
 
         {!loading && filtered.length === 0 && (
-          <div className="flex flex-col items-center gap-2 py-10 text-center">
-            <Inbox className="size-8" style={{ color: 'var(--border-strong)' }} />
-            <p className="text-xs" style={{ color: 'var(--muted)' }}>No streams{filterType !== 'all' ? ` of type "${filterType}"` : ''}</p>
-            <button onClick={() => onNewStream()} className="mt-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-white" style={{ background: 'var(--accent)' }}>
+          <div style={{ padding: '40px 0', textAlign: 'center' }}>
+            <Inbox size={28} style={{ color: 'var(--border-strong)', margin: '0 auto 8px' }} />
+            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 12px' }}>
+              {filterType !== 'all' ? `No ${filterType} streams` : 'No streams yet'}
+            </p>
+            <button onClick={() => onNewStream()} style={{ padding: '6px 14px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 600 }}>
               Create one
             </button>
           </div>
         )}
 
-        {filtered.map(entry => {
-          const meta = getStreamType(entry.type)
-          const color = TYPE_COLOR[entry.type]
-          const icon = TYPE_ICON[entry.type]
-          const selected = selectedId === entry.dealId
-          return (
-            <button
-              key={String(entry.dealId)}
-              onClick={() => setSelectedId(entry.dealId)}
-              className="w-full rounded-xl px-3 py-3 text-left transition-all"
-              style={{
-                background: selected ? 'var(--bg-white)' : 'transparent',
-                border: selected ? '1px solid var(--border)' : '1px solid transparent',
-                boxShadow: selected ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
-              }}
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="flex size-8 items-center justify-center rounded-lg shrink-0" style={{ background: color + '14', color }}>
-                  {icon}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {filtered.map(entry => {
+            const meta = getStreamType(entry.type)
+            const selected = selectedId === entry.dealId
+            return (
+              <button
+                key={String(entry.dealId)}
+                onClick={() => setSelectedId(entry.dealId)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '10px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: selected ? 'var(--bg-white)' : 'transparent',
+                  border: selected ? '1px solid var(--border)' : '1px solid transparent',
+                  boxShadow: selected ? 'var(--shadow-sm)' : 'none',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'background 0.1s',
+                }}
+              >
+                <div style={{ width: 30, height: 30, borderRadius: 7, background: TYPE_BG[entry.type], color: TYPE_COLOR[entry.type], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {TYPE_ICON[entry.type]}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs font-semibold" style={{ color: 'var(--ink)' }}>{meta.label}</p>
-                    <span className={`badge badge-${entry.type}`} style={{ fontSize: '10px' }}>{meta.label}</span>
-                  </div>
-                  <div className="flex items-center justify-between mt-0.5">
-                    <p className="text-xs mono truncate" style={{ color: 'var(--muted)' }}>#{String(entry.dealId).slice(-8)}</p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>{meta.label}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+                    <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'JetBrains Mono, monospace' }}>#{String(entry.dealId).slice(-8)}</span>
                     {entry.deposit > 0n && (
-                      <p className="text-xs font-medium tabular-nums" style={{ color: 'var(--ink-2)' }}>{fmtUSDC(entry.deposit)}</p>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>{fmtUSDC(entry.deposit)}</span>
                     )}
                   </div>
                 </div>
-              </div>
-            </button>
-          )
-        })}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {/* ── Right panel: stream detail ── */}
-      <div className="flex-1 min-w-0">
+      {/* Detail panel */}
+      <div style={{ flex: 1, minWidth: 0 }}>
         {selectedId !== null
           ? <StreamDetail dealId={selectedId} />
           : (
-            <div className="flex flex-col items-center justify-center gap-3 py-24 text-center rounded-xl" style={{ background: 'var(--bg-white)', border: '1px solid var(--border)' }}>
-              <p className="text-sm" style={{ color: 'var(--muted)' }}>Select a stream to view details</p>
-              <button onClick={() => onNewStream()} className="rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ background: 'var(--accent)' }}>
+            <div style={{
+              background: 'var(--bg-white)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '80px 24px',
+              textAlign: 'center',
+            }}>
+              <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px' }}>Select a stream to view details</p>
+              <button onClick={() => onNewStream()} style={{ padding: '8px 18px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600 }}>
                 + New stream
               </button>
             </div>
