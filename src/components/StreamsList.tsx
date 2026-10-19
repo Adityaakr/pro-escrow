@@ -45,10 +45,14 @@ export function StreamsList({ refreshTrigger, onNewStream }: StreamsListProps) {
     const go = async () => {
       setLoading(true)
       try {
+        // Arc Testnet prunes history — never query from block 0.
+        // Use current head minus a 200k-block lookback (~7 days at ~3s/block).
+        const head = await publicClient.getBlockNumber()
+        const fromBlock = head > 200000n ? head - 200000n : 0n
         const logs = await publicClient.getLogs({
           address: METERED_ESCROW.address,
           event: parseAbiItem('event DealFunded(uint256 indexed dealId, address indexed buyer, address indexed seller, address payee, uint256 deposit, bytes32 termsHash)'),
-          fromBlock: 0n, toBlock: 'latest',
+          fromBlock, toBlock: 'latest',
         })
         if (cancelled) return
         const seen = new Set<string>()
@@ -62,6 +66,17 @@ export function StreamsList({ refreshTrigger, onNewStream }: StreamsListProps) {
             collected.push({ dealId: id, type: decodeStreamType(id), deposit: log.args.deposit ?? 0n })
           }
         }
+        // Also pick up any locally-stored streams not yet indexed (optimistic)
+        const localKey = `flowpay:streams:${address.toLowerCase()}`
+        try {
+          const local = JSON.parse(sessionStorage.getItem(localKey) ?? '[]') as unknown as Array<{dealId: string; type: StreamType; deposit: string}>
+          for (const l of local) {
+            if (!seen.has(l.dealId)) {
+              seen.add(l.dealId)
+              collected.push({ dealId: BigInt(l.dealId), type: l.type, deposit: BigInt(l.deposit) })
+            }
+          }
+        } catch { /* ignore */ }
         const reversed = collected.reverse()
         setEntries(reversed)
         if (reversed.length > 0 && !hasAutoSelected.current) {

@@ -199,11 +199,48 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
     const t = termsData
     if (!t || !recipientSig || !funderSig) return
     if (chainId !== ARC_TESTNET_CHAIN_ID) { try { await switchChainAsync({ chainId: ARC_TESTNET_CHAIN_ID }) } catch { return } }
-    fundDeal({ address: METERED_ESCROW.address, abi: METERED_ESCROW.abi, functionName: 'createAndFundDeal', args: [t, funderSig as `0x${string}`, recipientSig as `0x${string}`], chainId: ARC_TESTNET_CHAIN_ID })
+    // Pass Terms as a strict tuple matching the contract struct field order
+    const termsArg = {
+      dealId:    t.dealId    as bigint,
+      buyer:     t.buyer     as `0x${string}`,
+      seller:    t.seller    as `0x${string}`,
+      payee:     t.payee     as `0x${string}`,
+      unitPrice: t.unitPrice as bigint,
+      maxUnits:  t.maxUnits  as bigint,
+      prepaid:   t.prepaid   as bigint,
+      end:       t.end       as bigint,
+      grace:     t.grace     as bigint,
+      nonce:     t.nonce     as bigint,
+      expiry:    t.expiry    as bigint,
+    }
+    fundDeal({
+      address: METERED_ESCROW.address,
+      abi: METERED_ESCROW.abi,
+      functionName: 'createAndFundDeal',
+      // buyerSig = funder's signature, sellerSig = recipient's signature
+      args: [termsArg, funderSig as `0x${string}`, recipientSig as `0x${string}`],
+      chainId: ARC_TESTNET_CHAIN_ID,
+    })
   }
 
   if (approveSuccess && step === 'approve') setStep('fund')
-  if (fundSuccess && step === 'fund' && termsData) { setStep('done'); onCreated(termsData.dealId as bigint) }
+  if (fundSuccess && step === 'fund' && termsData) {
+    // Persist to sessionStorage so StreamsList shows it immediately
+    // even before the chain indexes the DealFunded event.
+    if (address && streamType) {
+      const localKey = `flowpay:streams:${address.toLowerCase()}`
+      try {
+        const existing: Array<{dealId: string; type: string; deposit: string}> = JSON.parse(sessionStorage.getItem(localKey) ?? '[]')
+        const newEntry = { dealId: String(termsData.dealId), type: streamType, deposit: String(prepaidMicro) }
+        if (!existing.find(e => e.dealId === newEntry.dealId)) {
+          existing.unshift(newEntry)
+          sessionStorage.setItem(localKey, JSON.stringify(existing))
+        }
+      } catch { /* ignore */ }
+    }
+    setStep('done')
+    onCreated(termsData.dealId as bigint)
+  }
 
   const typeColor = streamType ? TYPE_COLOR[streamType] : 'var(--accent)'
 
@@ -384,8 +421,11 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
           <div style={{ width: 36, height: 36, borderRadius: '50%', background: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>4</div>
           <div>
             <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Fund the stream</p>
-            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '3px 0 0' }}>Lock {fmtUSDC(prepaidMicro)} USDC on-chain</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '3px 0 0' }}>Lock {fmtUSDC(prepaidMicro)} USDC on-chain. Gas is paid in USDC on Arc.</p>
           </div>
+        </div>
+        <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#92400e' }}>
+          MetaMask may show "Network fee: Unavailable" on Arc because gas is USDC. This is normal — tap "Review alert" then confirm to proceed.
         </div>
         <TxButton onClick={() => { void handleFund() }} isPending={fundPending} isConfirming={fundConfirming} label="Fund stream" />
         <TxReceipt hash={fundHash} isSuccess={fundSuccess} isError={fundError} error={fundErr} label="Stream funding" />

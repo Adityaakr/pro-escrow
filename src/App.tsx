@@ -232,7 +232,8 @@ export default function App() {
 
   function handleCreated(_id: bigint) {
     setView('streams')
-    setRefreshTick(n => n + 1)
+    // Give the chain 2 seconds to index before re-scanning
+    setTimeout(() => setRefreshTick(n => n + 1), 2000)
   }
 
   function openCreate(type?: StreamType) {
