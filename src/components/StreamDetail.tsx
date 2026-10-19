@@ -212,15 +212,15 @@ export function StreamDetail({ dealId }: { dealId: bigint }) {
           <span style={{ fontSize: 12, fontWeight: 600, color: typeColor }}>{roleLabel}</span>
         </div>
 
-        {/* Metric strip */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0 }}>
+        {/* Metric strip — 2x2 on mobile, 4-col on desktop */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)' }} className="sm:grid-cols-4">
           {[
             { label: 'Locked', value: fmtUSDC(deposit) },
             { label: streamType === 'payroll' ? 'Paid out' : streamType === 'vesting' ? 'Vested' : 'Released', value: fmtUSDC(settled) },
             { label: 'Remaining', value: fmtUSDC(remaining) },
             { label: 'Progress', value: `${pct}%` },
           ].map(({ label, value }, i) => (
-            <div key={label} style={{ padding: '12px 16px', borderLeft: i > 0 ? '1px solid var(--border)' : undefined }}>
+            <div key={label} style={{ padding: '12px 16px', borderLeft: i % 2 !== 0 ? '1px solid var(--border)' : undefined, borderTop: i >= 2 ? '1px solid var(--border)' : undefined }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--subtle)', margin: '0 0 4px' }}>{label}</p>
               <p style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 20, color: 'var(--ink)', margin: 0, lineHeight: 1, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
             </div>
@@ -262,11 +262,11 @@ export function StreamDetail({ dealId }: { dealId: bigint }) {
         ))}
       </div>
 
-      {/* Tab content */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px' }}>
+      {/* Tab content — single col on mobile, 2-col on desktop */}
+      <div className="block md:grid" style={{ gridTemplateColumns: '1fr 280px' }}>
 
         {/* Main content */}
-        <div style={{ padding: '20px', borderRight: '1px solid var(--border)' }}>
+        <div style={{ padding: '20px', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
 
           {activeTab === 'overview' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

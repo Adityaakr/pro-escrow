@@ -102,7 +102,7 @@ function StepBar({ current, typeColor }: { current: WizStep; typeColor: string }
 
 function WizCard({ children, typeColor, step, onBack }: { children: React.ReactNode; typeColor: string; step: WizStep; onBack?: () => void }) {
   return (
-    <div style={{ maxWidth: 560 }}>
+    <div style={{ maxWidth: 560, width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         {onBack
           ? <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>
@@ -272,7 +272,7 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
           <Field label={meta.defaults.recipientLabel} value={form.recipient} onChange={v => setForm(f => ({ ...f, recipient: v }))} placeholder="0x..." />
           <Field label="Payee address (optional)" value={form.payee} onChange={v => setForm(f => ({ ...f, payee: v }))} placeholder="Defaults to recipient" hint="Useful for multi-sig payees" />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="grid sm:grid-cols-2" style={{ gap: 12 }}>
             <Field
               label={streamType === 'payroll' ? 'Monthly salary (USDC)' : streamType === 'vesting' ? 'Per tranche (USDC)' : 'Per milestone (USDC)'}
               value={form.unitPrice} onChange={v => setForm(f => ({ ...f, unitPrice: v }))} type="number"
@@ -289,7 +289,7 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
             hint={`${form.maxUnits} x $${form.unitPrice} = ${fmtUSDC(parseUSDC(form.unitPrice) * BigInt(parseInt(form.maxUnits) || 0))}`}
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="grid sm:grid-cols-2" style={{ gap: 12 }}>
             <Field label="Term length (days)" value={form.termDays} onChange={v => setForm(f => ({ ...f, termDays: v }))} type="number" />
             <Field label="Grace period (days)" value={form.graceDays} onChange={v => setForm(f => ({ ...f, graceDays: v }))} type="number" hint="Days after term before reclaim" />
           </div>

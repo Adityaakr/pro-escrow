@@ -11,7 +11,6 @@ import type { StreamType } from './streams'
 
 type View = 'dashboard' | 'streams' | 'create'
 
-// ── Logo ──────────────────────────────────────────────────────────────────────
 function Logo({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 26 26" fill="none">
@@ -23,7 +22,6 @@ function Logo({ size = 26 }: { size?: number }) {
   )
 }
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
 const TYPE_META: Record<StreamType, { icon: React.ReactNode; color: string }> = {
   payroll: { icon: <Briefcase size={13} />, color: 'var(--blue)' },
   vesting: { icon: <TrendingUp size={13} />, color: 'var(--purple)' },
@@ -50,7 +48,6 @@ function Sidebar({ view, setView, onCreateStream }: {
       top: 0,
       flexShrink: 0,
     }}>
-      {/* Brand */}
       <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
           <Logo size={26} />
@@ -62,24 +59,16 @@ function Sidebar({ view, setView, onCreateStream }: {
         <button
           onClick={() => onCreateStream()}
           style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            padding: '8px 0',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--accent)',
-            color: 'white',
-            fontSize: 13,
-            fontWeight: 600,
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 6, padding: '9px 0', borderRadius: 'var(--radius-sm)',
+            background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600,
+            minHeight: 44,
           }}
         >
           <Plus size={14} /> New stream
         </button>
       </div>
 
-      {/* Nav */}
       <nav style={{ padding: '10px 8px', flex: 1 }}>
         <div style={{ marginBottom: 4 }}>
           {([
@@ -92,17 +81,12 @@ function Sidebar({ view, setView, onCreateStream }: {
                 key={item.id}
                 onClick={() => setView(item.id)}
                 style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '7px 10px',
-                  borderRadius: 'var(--radius-sm)',
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 10px', borderRadius: 'var(--radius-sm)',
                   background: active ? 'var(--surface-muted)' : 'transparent',
                   color: active ? 'var(--ink)' : 'var(--muted)',
-                  fontSize: 13,
-                  fontWeight: active ? 600 : 400,
-                  marginBottom: 2,
+                  fontSize: 13, fontWeight: active ? 600 : 400,
+                  marginBottom: 2, minHeight: 40,
                 }}
               >
                 <span style={{ color: active ? 'var(--blue)' : 'var(--subtle)', display: 'flex' }}>{item.icon}</span>
@@ -112,7 +96,6 @@ function Sidebar({ view, setView, onCreateStream }: {
           })}
         </div>
 
-        {/* Stream type shortcuts */}
         <div style={{ marginTop: 16 }}>
           <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--subtle)', padding: '0 10px', marginBottom: 6 }}>
             Stream types
@@ -122,16 +105,9 @@ function Sidebar({ view, setView, onCreateStream }: {
               key={t}
               onClick={() => onCreateStream(t)}
               style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 8,
-                padding: '6px 10px',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--muted)',
-                fontSize: 13,
-                marginBottom: 1,
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 8, padding: '7px 10px', borderRadius: 'var(--radius-sm)',
+                color: 'var(--muted)', fontSize: 13, marginBottom: 1, minHeight: 40,
               }}
               onMouseEnter={e => { (e.currentTarget).style.background = 'var(--surface-muted)' }}
               onMouseLeave={e => { (e.currentTarget).style.background = 'transparent' }}
@@ -149,46 +125,102 @@ function Sidebar({ view, setView, onCreateStream }: {
   )
 }
 
-// ── Topbar ────────────────────────────────────────────────────────────────────
-function Topbar({ title }: { title: string }) {
+function Topbar({ title, onNewStream }: { title: string; onNewStream: () => void }) {
   return (
     <header style={{
       height: 'var(--topbar-h)',
       background: 'var(--bg-white)',
       borderBottom: '1px solid var(--border)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 24px',
-      position: 'sticky',
-      top: 0,
-      zIndex: 10,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '0 16px 0 20px',
+      position: 'sticky', top: 0, zIndex: 10,
     }}>
       <h1 style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 17, color: 'var(--ink)', margin: 0, fontWeight: 400 }}>
         {title}
       </h1>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="hidden sm:flex" style={{
+          alignItems: 'center', gap: 6,
           background: 'var(--surface-muted)', border: '1px solid var(--border)',
-          borderRadius: 20, padding: '4px 10px',
-          fontSize: 12, color: 'var(--muted)',
+          borderRadius: 20, padding: '4px 10px', fontSize: 12, color: 'var(--muted)',
         }}>
           <NetworkTenet variant="branded" size={13} />
-          Arc Testnet
+          <span>Arc Testnet</span>
         </div>
         <ConnectKitButton />
+        {/* Mobile new stream FAB-style shortcut in topbar */}
+        <button
+          className="flex md:hidden"
+          onClick={onNewStream}
+          style={{
+            width: 36, height: 36, borderRadius: 'var(--radius-sm)',
+            background: 'var(--accent)', color: 'white',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Plus size={16} />
+        </button>
       </div>
     </header>
   )
 }
 
-// ── App ───────────────────────────────────────────────────────────────────────
+// Mobile bottom nav
+function BottomNav({ view, setView, onNewStream }: {
+  view: View; setView: (v: View) => void; onNewStream: () => void
+}) {
+  return (
+    <nav className="flex md:hidden" style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+      background: 'var(--bg-white)', borderTop: '1px solid var(--border)',
+      display: 'flex', alignItems: 'stretch', height: 60,
+    }}>
+      {[
+        { id: 'dashboard' as View, label: 'Overview', icon: <LayoutDashboard size={18} /> },
+        { id: 'streams'   as View, label: 'Streams',  icon: <ArrowRightLeft size={18} /> },
+      ].map(item => {
+        const active = view === item.id
+        return (
+          <button
+            key={item.id}
+            onClick={() => setView(item.id)}
+            style={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'center', gap: 3, fontSize: 10, fontWeight: active ? 600 : 400,
+              color: active ? 'var(--ink)' : 'var(--muted)',
+              background: 'transparent', borderRadius: 0,
+            }}
+          >
+            <span style={{ color: active ? 'var(--blue)' : 'var(--subtle)' }}>{item.icon}</span>
+            {item.label}
+          </button>
+        )
+      })}
+      <button
+        onClick={onNewStream}
+        style={{
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', gap: 3, fontSize: 10, fontWeight: 600,
+          color: 'var(--accent)', background: 'transparent',
+        }}
+      >
+        <span style={{
+          width: 32, height: 32, borderRadius: '50%',
+          background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Plus size={16} color="white" />
+        </span>
+        New
+      </button>
+    </nav>
+  )
+}
+
 export default function App() {
   const { address } = useAccount()
-  const [view, setView]             = useState<View>('dashboard')
+  const [view, setView]               = useState<View>('dashboard')
   const [refreshTick, setRefreshTick] = useState(0)
-  const [createType, setCreateType] = useState<StreamType | null>(null)
+  const [createType, setCreateType]   = useState<StreamType | null>(null)
 
   if (!address) return <LandingPage />
 
@@ -210,14 +242,22 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100dvh', background: 'var(--bg)' }}>
+      {/* Desktop sidebar */}
       <div className="hidden md:block">
         <Sidebar view={view} setView={setView} onCreateStream={openCreate} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-        <Topbar title={TITLES[view]} />
+        <Topbar title={TITLES[view]} onNewStream={() => openCreate()} />
 
-        <main style={{ flex: 1, padding: 24, maxWidth: 1200 }}>
+        <main style={{
+          flex: 1,
+          padding: '20px 16px',
+          paddingBottom: 80, // space for mobile bottom nav
+          maxWidth: 1160,
+          width: '100%',
+          boxSizing: 'border-box',
+        }}>
           {view === 'dashboard' && (
             <DashboardView
               onCreateStream={openCreate}
@@ -237,12 +277,15 @@ export default function App() {
           )}
         </main>
 
-        <footer style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--subtle)' }}>
+        <footer className="hidden md:flex" style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--subtle)' }}>
           <span style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>FlowPay</span>
           <span>·</span>
           <span>USDC streams on Arc Testnet</span>
         </footer>
       </div>
+
+      {/* Mobile bottom nav */}
+      <BottomNav view={view} setView={setView} onNewStream={() => openCreate()} />
     </div>
   )
 }
