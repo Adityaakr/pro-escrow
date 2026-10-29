@@ -11,13 +11,18 @@ import type { StreamType } from './streams'
 
 type View = 'dashboard' | 'streams' | 'create'
 
-function Logo({ size = 26 }: { size?: number }) {
+// ── Logo mark ────────────────────────────────────────────────────────────────
+function Logo({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 26 26" fill="none">
-      <rect width="26" height="26" rx="7" fill="#0f172a" />
-      <path d="M7 13 C7 9.5 9.5 7 13 7 C16.5 7 19 9.5 19 13" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
-      <path d="M13 17 L13 13" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="13" cy="18.5" r="1.5" fill="white" />
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="8"
+        style={{ fill: 'rgba(232,195,130,0.12)' }} />
+      <rect width="28" height="28" rx="8"
+        fill="none" stroke="rgba(232,195,130,0.3)" strokeWidth="1" />
+      <path d="M8 14 C8 10 10.5 7.5 14 7.5 C17.5 7.5 20 10 20 14"
+        stroke="#e8c382" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+      <path d="M14 18 L14 14" stroke="#e8c382" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="14" cy="19.5" r="1.5" fill="#e8c382" />
     </svg>
   )
 }
@@ -33,6 +38,7 @@ const TYPE_LABELS: Record<StreamType, string> = {
   escrow:  'Milestones',
 }
 
+// ── Sidebar ──────────────────────────────────────────────────────────────────
 function Sidebar({ view, setView, onCreateStream }: {
   view: View; setView: (v: View) => void; onCreateStream: (t?: StreamType) => void
 }) {
@@ -48,32 +54,65 @@ function Sidebar({ view, setView, onCreateStream }: {
       top: 0,
       flexShrink: 0,
     }}>
-      <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
-          <Logo size={26} />
+      {/* Brand */}
+      <div style={{
+        padding: '20px 16px 14px',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, position: 'relative' }}>
+          {/* Corner marks like the reference design */}
+          <span style={{ position: 'absolute', top: -4, left: -4, width: 6, height: 6, background: 'var(--subtle)' }} />
+          <span style={{ position: 'absolute', bottom: -4, right: -4, width: 6, height: 6, background: 'var(--subtle)' }} />
+          <Logo size={28} />
           <div>
-            <div style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 15, color: 'var(--ink)', lineHeight: 1 }}>FlowPay</div>
-            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1 }}>USDC streams</div>
+            <div style={{
+              fontFamily: 'Gloock, Georgia, serif',
+              fontSize: 15,
+              color: 'var(--ink)',
+              lineHeight: 1.1,
+            }}>FlowPay</div>
+            <div style={{
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--subtle)',
+              marginTop: 1,
+            }}>USDC streams</div>
           </div>
-        </div>
+        </a>
+
+        {/* New stream CTA — gold */}
         <button
           onClick={() => onCreateStream()}
           style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: 6, padding: '9px 0', borderRadius: 'var(--radius-sm)',
-            background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600,
-            minHeight: 44,
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '10px 0',
+            borderRadius: 'var(--radius-sm)',
+            background: 'linear-gradient(to bottom, #f0d09a, #e8c382)',
+            color: '#351e10',
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase' as const,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.25), 0 4px 12px rgba(232,195,130,0.2)',
+            minHeight: 40,
           }}
         >
-          <Plus size={14} /> New stream
+          <Plus size={13} /> New stream
         </button>
       </div>
 
+      {/* Nav */}
       <nav style={{ padding: '10px 8px', flex: 1 }}>
         <div style={{ marginBottom: 4 }}>
           {([
-            { id: 'dashboard' as View, label: 'Overview',  icon: <LayoutDashboard size={15} /> },
-            { id: 'streams'   as View, label: 'Streams',   icon: <ArrowRightLeft size={15} /> },
+            { id: 'dashboard' as View, label: 'Overview',  icon: <LayoutDashboard size={14} /> },
+            { id: 'streams'   as View, label: 'Streams',   icon: <ArrowRightLeft size={14} /> },
           ]).map(item => {
             const active = view === item.id
             return (
@@ -81,23 +120,38 @@ function Sidebar({ view, setView, onCreateStream }: {
                 key={item.id}
                 onClick={() => setView(item.id)}
                 style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '8px 10px', borderRadius: 'var(--radius-sm)',
-                  background: active ? 'var(--surface-muted)' : 'transparent',
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 9,
+                  padding: '9px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
                   color: active ? 'var(--ink)' : 'var(--muted)',
-                  fontSize: 13, fontWeight: active ? 600 : 400,
-                  marginBottom: 2, minHeight: 40,
+                  fontSize: 13,
+                  fontWeight: active ? 600 : 400,
+                  marginBottom: 2,
+                  minHeight: 40,
+                  border: active ? '1px solid var(--border)' : '1px solid transparent',
                 }}
               >
-                <span style={{ color: active ? 'var(--blue)' : 'var(--subtle)', display: 'flex' }}>{item.icon}</span>
+                <span style={{ color: active ? 'var(--accent)' : 'var(--subtle)', display: 'flex' }}>{item.icon}</span>
                 {item.label}
               </button>
             )
           })}
         </div>
 
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--subtle)', padding: '0 10px', marginBottom: 6 }}>
+        <div style={{ marginTop: 20 }}>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase' as const,
+            color: 'var(--subtle)',
+            padding: '0 10px',
+            marginBottom: 8,
+          }}>
             Stream types
           </div>
           {(['payroll', 'vesting', 'escrow'] as StreamType[]).map(t => (
@@ -105,11 +159,19 @@ function Sidebar({ view, setView, onCreateStream }: {
               key={t}
               onClick={() => onCreateStream(t)}
               style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                gap: 8, padding: '7px 10px', borderRadius: 'var(--radius-sm)',
-                color: 'var(--muted)', fontSize: 13, marginBottom: 1, minHeight: 40,
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+                padding: '7px 10px',
+                borderRadius: 'var(--radius-sm)',
+                color: 'var(--muted)',
+                fontSize: 13,
+                marginBottom: 1,
+                minHeight: 38,
               }}
-              onMouseEnter={e => { (e.currentTarget).style.background = 'var(--surface-muted)' }}
+              onMouseEnter={e => { (e.currentTarget).style.background = 'rgba(255,255,255,0.04)' }}
               onMouseLeave={e => { (e.currentTarget).style.background = 'transparent' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -121,41 +183,76 @@ function Sidebar({ view, setView, onCreateStream }: {
           ))}
         </div>
       </nav>
+
+      {/* Footer */}
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+        <p style={{ fontSize: 10, color: 'var(--subtle)', margin: 0, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          Arc Testnet
+        </p>
+      </div>
     </aside>
   )
 }
 
+// ── Topbar ────────────────────────────────────────────────────────────────────
 function Topbar({ title, onNewStream }: { title: string; onNewStream: () => void }) {
   return (
     <header style={{
       height: 'var(--topbar-h)',
-      background: 'var(--bg-white)',
+      background: 'rgba(7,7,7,0.85)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
       borderBottom: '1px solid var(--border)',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '0 16px 0 20px',
-      position: 'sticky', top: 0, zIndex: 10,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '0 20px',
+      position: 'sticky',
+      top: 0,
+      zIndex: 10,
     }}>
-      <h1 style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 17, color: 'var(--ink)', margin: 0, fontWeight: 400 }}>
+      <h1 style={{
+        fontFamily: 'Gloock, Georgia, serif',
+        fontSize: 18,
+        color: 'var(--ink)',
+        margin: 0,
+        fontWeight: 400,
+        letterSpacing: '-0.01em',
+      }}>
         {title}
       </h1>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {/* Network chip */}
         <div className="hidden sm:flex" style={{
-          alignItems: 'center', gap: 6,
-          background: 'var(--surface-muted)', border: '1px solid var(--border)',
-          borderRadius: 20, padding: '4px 10px', fontSize: 12, color: 'var(--muted)',
+          alignItems: 'center',
+          gap: 6,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid var(--border)',
+          borderRadius: 20,
+          padding: '5px 10px',
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: '0.05em',
+          color: 'var(--muted)',
+          textTransform: 'uppercase' as const,
         }}>
           <NetworkTenet variant="branded" size={13} />
           <span>Arc Testnet</span>
         </div>
         <ConnectKitButton />
-        {/* Mobile new stream FAB-style shortcut in topbar */}
         <button
           className="flex md:hidden"
           onClick={onNewStream}
           style={{
-            width: 36, height: 36, borderRadius: 'var(--radius-sm)',
-            background: 'var(--accent)', color: 'white',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 36,
+            height: 36,
+            borderRadius: 'var(--radius-sm)',
+            background: 'linear-gradient(to bottom, #f0d09a, #e8c382)',
+            color: '#351e10',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
           }}
         >
           <Plus size={16} />
@@ -165,15 +262,24 @@ function Topbar({ title, onNewStream }: { title: string; onNewStream: () => void
   )
 }
 
-// Mobile bottom nav
+// ── Mobile bottom nav ─────────────────────────────────────────────────────────
 function BottomNav({ view, setView, onNewStream }: {
   view: View; setView: (v: View) => void; onNewStream: () => void
 }) {
   return (
     <nav className="flex md:hidden" style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-      background: 'var(--bg-white)', borderTop: '1px solid var(--border)',
-      display: 'flex', alignItems: 'stretch', height: 60,
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      zIndex: 50,
+      background: 'rgba(7,7,7,0.92)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      borderTop: '1px solid var(--border)',
+      display: 'flex',
+      alignItems: 'stretch',
+      height: 64,
     }}>
       {[
         { id: 'dashboard' as View, label: 'Overview', icon: <LayoutDashboard size={18} /> },
@@ -185,30 +291,55 @@ function BottomNav({ view, setView, onNewStream }: {
             key={item.id}
             onClick={() => setView(item.id)}
             style={{
-              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-              justifyContent: 'center', gap: 3, fontSize: 10, fontWeight: active ? 600 : 400,
-              color: active ? 'var(--ink)' : 'var(--muted)',
-              background: 'transparent', borderRadius: 0,
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 3,
+              fontSize: 10,
+              fontWeight: active ? 700 : 400,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase' as const,
+              color: active ? 'var(--ink)' : 'var(--subtle)',
+              background: 'transparent',
+              borderRadius: 0,
             }}
           >
-            <span style={{ color: active ? 'var(--blue)' : 'var(--subtle)' }}>{item.icon}</span>
+            <span style={{ color: active ? 'var(--accent)' : 'var(--subtle)' }}>{item.icon}</span>
             {item.label}
           </button>
         )
       })}
+      {/* Center FAB */}
       <button
         onClick={onNewStream}
         style={{
-          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', gap: 3, fontSize: 10, fontWeight: 600,
-          color: 'var(--accent)', background: 'transparent',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 3,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase' as const,
+          color: '#351e10',
+          background: 'transparent',
         }}
       >
         <span style={{
-          width: 32, height: 32, borderRadius: '50%',
-          background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: 'linear-gradient(to bottom, #f0d09a, #e8c382)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 0 16px rgba(232,195,130,0.35)',
         }}>
-          <Plus size={16} color="white" />
+          <Plus size={16} color="#351e10" />
         </span>
         New
       </button>
@@ -216,6 +347,7 @@ function BottomNav({ view, setView, onNewStream }: {
   )
 }
 
+// ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const { address } = useAccount()
   const [view, setView]               = useState<View>('dashboard')
@@ -232,7 +364,6 @@ export default function App() {
 
   function handleCreated(_id: bigint) {
     setView('streams')
-    // Give the chain 2 seconds to index before re-scanning
     setTimeout(() => setRefreshTick(n => n + 1), 2000)
   }
 
@@ -253,8 +384,8 @@ export default function App() {
 
         <main style={{
           flex: 1,
-          padding: '20px 16px',
-          paddingBottom: 80, // space for mobile bottom nav
+          padding: '24px 20px',
+          paddingBottom: 80,
           maxWidth: 1160,
           width: '100%',
           boxSizing: 'border-box',
@@ -278,14 +409,21 @@ export default function App() {
           )}
         </main>
 
-        <footer className="hidden md:flex" style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--subtle)' }}>
-          <span style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>FlowPay</span>
-          <span>·</span>
-          <span>USDC streams on Arc Testnet</span>
+        <footer className="hidden md:flex" style={{
+          padding: '14px 24px',
+          borderTop: '1px solid var(--border)',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: 11,
+          color: 'var(--subtle)',
+          letterSpacing: '0.06em',
+        }}>
+          <span style={{ fontFamily: 'Gloock, Georgia, serif', fontSize: 13, color: 'var(--muted)' }}>FlowPay</span>
+          <span style={{ color: 'var(--subtle)', opacity: 0.4 }}>·</span>
+          <span style={{ textTransform: 'uppercase' }}>USDC streams on Arc Testnet</span>
         </footer>
       </div>
 
-      {/* Mobile bottom nav */}
       <BottomNav view={view} setView={setView} onNewStream={() => openCreate()} />
     </div>
   )

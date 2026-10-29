@@ -222,7 +222,7 @@ export function StreamDetail({ dealId }: { dealId: bigint }) {
           ].map(({ label, value }, i) => (
             <div key={label} style={{ padding: '12px 16px', borderLeft: i % 2 !== 0 ? '1px solid var(--border)' : undefined, borderTop: i >= 2 ? '1px solid var(--border)' : undefined }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--subtle)', margin: '0 0 4px' }}>{label}</p>
-              <p style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 20, color: 'var(--ink)', margin: 0, lineHeight: 1, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
+              <p style={{ fontFamily: 'Gloock, Georgia, serif', fontSize: 20, color: 'var(--ink)', margin: 0, lineHeight: 1, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
             </div>
           ))}
         </div>

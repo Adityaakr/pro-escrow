@@ -1,707 +1,917 @@
-import { useState } from 'react'
 import { ConnectKitButton } from 'connectkit'
-import { ExternalLink, ArrowRight, Check, X, Menu } from 'lucide-react'
+import { ExternalLink, ArrowRight, Check, Shield, Zap, Lock, Menu, X } from 'lucide-react'
+import { useState } from 'react'
 import { ARC_TESTNET_EXPLORER, METERED_ESCROW } from '@/contract'
 
-// ── Design tokens (landing-only, self-contained) ──────────────────────────────
+// ── Design tokens (self-contained for landing) ────────────────────────────────
 const C = {
-  bg:      '#fafaf9',
-  bgAlt:   '#f4f3ef',
-  bgDark:  '#0f1117',
-  border:  '#e4e2dc',
-  ink:     '#111110',
-  ink2:    '#3a3936',
-  muted:   '#72716b',
-  subtle:  '#a8a49c',
-  blue:    '#1d4ed8',
-  purple:  '#5b21b6',
-  amber:   '#92400e',
-  green:   '#15803d',
+  bg:       '#070707',
+  bgAlt:    '#0f0f0f',
+  bgCard:   'rgba(255,255,255,0.03)',
+  border:   'rgba(255,255,255,0.08)',
+  borderHi: 'rgba(255,255,255,0.16)',
+  ink:      '#f4f4f0',
+  ink2:     '#c8c6be',
+  muted:    '#888580',
+  subtle:   '#4e4c47',
+  gold:     '#e8c382',
+  goldDim:  'rgba(232,195,130,0.15)',
+  goldFg:   '#351e10',
+  blue:     '#60a5fa',
+  purple:   '#c084fc',
+  amber:    '#fbbf24',
+  green:    '#4ade80',
 }
 
-// ── Type scale constants ──────────────────────────────────────────────────────
-const serif = 'Instrument Serif, Georgia, serif'
-const sans  = 'Inter, system-ui, sans-serif'
-const mono  = 'JetBrains Mono, Menlo, monospace'
+const gloock = 'Gloock, Georgia, serif'
+const manrope = 'Manrope, sans-serif'
+const mono = 'JetBrains Mono, Menlo, monospace'
 
-const T = {
-  h1:      { fontFamily: serif, fontSize: 'clamp(40px,5vw,76px)', fontWeight: 400, lineHeight: 1.04, letterSpacing: '-0.025em', color: C.ink },
-  h2:      { fontFamily: serif, fontSize: 'clamp(26px,2.8vw,42px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.02em', color: C.ink },
-  h3:      { fontFamily: serif, fontSize: 18, fontWeight: 400, color: C.ink },
-  body:    { fontFamily: sans, fontSize: 14, lineHeight: 1.8, color: C.muted },
-  bodyLg:  { fontFamily: sans, fontSize: 15, lineHeight: 1.8, color: C.muted },
-  label:   { fontFamily: mono, fontSize: 10, letterSpacing: '0.12em', color: C.muted, textTransform: 'uppercase' as const },
-  caption: { fontFamily: sans, fontSize: 12, color: C.muted },
-  mono:    { fontFamily: mono, fontSize: 11, color: C.ink2 },
-}
-
-// ── Reusable atoms ────────────────────────────────────────────────────────────
+// ── Tiny atoms ────────────────────────────────────────────────────────────────
 function Rule({ style }: { style?: React.CSSProperties }) {
   return <div style={{ height: 1, background: C.border, ...style }} />
 }
 
-function Tag({ children, color = C.muted, bg = 'transparent', border = C.border }: {
-  children: React.ReactNode; color?: string; bg?: string; border?: string
-}) {
+function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ ...T.label, color, background: bg, border: `1px solid ${border}`, borderRadius: 4, padding: '3px 8px', display: 'inline-block' }}>
+    <span style={{
+      fontFamily: mono,
+      fontSize: 10,
+      letterSpacing: '0.12em',
+      textTransform: 'uppercase' as const,
+      color: C.gold,
+      background: C.goldDim,
+      border: `1px solid rgba(232,195,130,0.25)`,
+      borderRadius: 4,
+      padding: '3px 9px',
+      display: 'inline-block',
+    }}>
       {children}
     </span>
   )
 }
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
+function GoldBtn({ children, onClick, style }: {
+  children: React.ReactNode; onClick?: () => void; style?: React.CSSProperties
+}) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
-      <div style={{ width: 20, height: 1, background: C.subtle }} />
-      <span style={{ ...T.label, color: C.muted }}>{children}</span>
-    </div>
-  )
-}
-
-// Container with consistent 8px-grid gutters
-function Wrap({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 clamp(16px, 4vw, 40px)', ...style }}>
+    <button
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '12px 22px',
+        borderRadius: 8,
+        background: 'linear-gradient(to bottom, #f0d09a, #e8c382)',
+        color: C.goldFg,
+        fontFamily: manrope,
+        fontSize: 13,
+        fontWeight: 700,
+        letterSpacing: '0.04em',
+        textTransform: 'uppercase' as const,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.2), 0 4px 20px rgba(232,195,130,0.25)',
+        cursor: 'pointer',
+        border: 'none',
+        minHeight: 44,
+        ...style,
+      }}
+    >
       {children}
+    </button>
+  )
+}
+
+function GhostBtn({ children, onClick, style }: {
+  children: React.ReactNode; onClick?: () => void; style?: React.CSSProperties
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '11px 20px',
+        borderRadius: 8,
+        background: 'linear-gradient(to bottom, rgba(255,255,255,0.07), rgba(255,255,255,0.03))',
+        color: C.ink2,
+        fontFamily: manrope,
+        fontSize: 13,
+        fontWeight: 600,
+        letterSpacing: '0.04em',
+        textTransform: 'uppercase' as const,
+        border: `1px solid ${C.border}`,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.5)',
+        cursor: 'pointer',
+        minHeight: 44,
+        ...style,
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ── Logo ──────────────────────────────────────────────────────────────────────
+function Logo({ size = 30 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 30 30" fill="none">
+      <rect width="30" height="30" rx="9" fill="rgba(232,195,130,0.10)" />
+      <rect width="30" height="30" rx="9" fill="none" stroke="rgba(232,195,130,0.3)" strokeWidth="1" />
+      <path d="M8.5 15 C8.5 10.5 11.2 8 15 8 C18.8 8 21.5 10.5 21.5 15"
+        stroke="#e8c382" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+      <path d="M15 19 L15 15" stroke="#e8c382" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="15" cy="20.5" r="1.6" fill="#e8c382" />
+    </svg>
+  )
+}
+
+// ── Stat card ─────────────────────────────────────────────────────────────────
+function StatCard({ value, label }: { value: string; label: string }) {
+  return (
+    <div style={{
+      flex: 1,
+      minWidth: 120,
+      padding: '20px',
+      background: C.bgCard,
+      border: `1px solid ${C.border}`,
+      borderRadius: 10,
+      textAlign: 'center' as const,
+    }}>
+      <div style={{
+        fontFamily: gloock,
+        fontSize: 'clamp(26px, 3.5vw, 42px)',
+        color: C.gold,
+        lineHeight: 1,
+        marginBottom: 6,
+      }}>{value}</div>
+      <div style={{ fontFamily: manrope, fontSize: 12, color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>{label}</div>
     </div>
   )
 }
 
-// ── SVG diagrams ─────────────────────────────────────────────────────────────
-function FlowDiagram() {
-  const steps = [
-    { n: '01', label: 'Sign terms',    sub: 'EIP-712' },
-    { n: '02', label: 'Deposit USDC',  sub: 'On-chain' },
-    { n: '03', label: 'Deliver work',  sub: 'Off-chain' },
-    { n: '04', label: 'Settle',        sub: 'On-chain' },
-    { n: '05', label: 'Refund unused', sub: 'Automatic' },
-  ]
-  const W = 620; const nodeY = 28; const gap = W / (steps.length - 1)
+// ── Stream type card ──────────────────────────────────────────────────────────
+function StreamCard({ title, color, desc, items, tag }: {
+  title: string; color: string; desc: string; items: string[]; tag: string
+}) {
   return (
-    <svg viewBox={`0 0 ${W} 80`} style={{ width: '100%', display: 'block', overflow: 'visible' }}>
-      {steps.slice(0, -1).map((_, i) => (
-        <line key={i} x1={i * gap + 10} y1={nodeY} x2={(i + 1) * gap - 10} y2={nodeY} stroke={C.border} strokeWidth="1" />
-      ))}
-      {steps.map((s, i) => (
-        <g key={s.label}>
-          <circle cx={i * gap} cy={nodeY} r="8" fill="white" stroke={C.ink2} strokeWidth="1.5" />
-          <text x={i * gap} y={nodeY + 4.5} textAnchor="middle" style={{ fontFamily: mono, fontSize: 8.5, fill: C.ink, fontWeight: 600 }}>{s.n}</text>
-          <text x={i * gap} y={nodeY + 26} textAnchor="middle" style={{ fontFamily: sans, fontSize: 11, fill: C.ink2, fontWeight: 500 }}>{s.label}</text>
-          <text x={i * gap} y={nodeY + 40} textAnchor="middle" style={{ fontFamily: mono, fontSize: 9, fill: C.muted, letterSpacing: '0.06em' }}>{s.sub}</text>
-        </g>
-      ))}
-    </svg>
+    <div style={{
+      background: C.bgCard,
+      border: `1px solid ${C.border}`,
+      borderTop: `2px solid ${color}`,
+      borderRadius: 10,
+      padding: '24px 22px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 14,
+    }}>
+      <div>
+        <Tag>{tag}</Tag>
+        <h3 style={{ fontFamily: gloock, fontSize: 22, color: C.ink, margin: '10px 0 0', fontWeight: 400, letterSpacing: '-0.01em' }}>{title}</h3>
+      </div>
+      <p style={{ fontFamily: manrope, fontSize: 13, lineHeight: 1.7, color: C.muted, margin: 0 }}>{desc}</p>
+      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {items.map(item => (
+          <li key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
+            <Check size={13} style={{ color: C.gold, marginTop: 2, flexShrink: 0 }} />
+            <span style={{ fontFamily: manrope, fontSize: 12, color: C.muted, lineHeight: 1.6 }}>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
-function VestingChart() {
-  const months = Array.from({ length: 16 }, (_, i) => ({ m: i + 1, vested: i < 4 ? 0 : i < 8 ? (i - 3) * 0.25 : 1 }))
-  const W = 560; const H = 80; const pad = 4
-  const bw = (W - pad * (months.length - 1)) / months.length
+// ── FAQ item ──────────────────────────────────────────────────────────────────
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false)
   return (
-    <svg viewBox={`0 0 ${W} ${H + 24}`} style={{ width: '100%', display: 'block' }}>
-      {months.map(({ m, vested }, i) => {
-        const x = i * (bw + pad); const bh = Math.max(vested * H, vested > 0 ? 3 : 0)
-        return (
-          <g key={m}>
-            <rect x={x} y={H - 3} width={bw} height={3} rx="1" fill={C.border} />
-            {vested > 0 && <rect x={x} y={H - bh} width={bw} height={bh} rx="1" fill={i < 8 ? '#93c5fd' : C.blue} />}
-            {m % 4 === 0 && <text x={x + bw / 2} y={H + 16} textAnchor="middle" style={{ fontFamily: mono, fontSize: 8, fill: C.muted }}>M{m}</text>}
-          </g>
-        )
-      })}
-      <line x1={(3.5) * (bw + pad)} y1="0" x2={(3.5) * (bw + pad)} y2={H} stroke={C.amber} strokeWidth="1" strokeDasharray="4 3" />
-      <text x={(3.5) * (bw + pad) + 4} y="12" style={{ fontFamily: mono, fontSize: 8, fill: C.amber, letterSpacing: '0.06em' }}>CLIFF</text>
-    </svg>
+    <div style={{ borderBottom: `1px solid ${C.border}` }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '18px 0',
+          fontFamily: manrope,
+          fontSize: 14,
+          fontWeight: 600,
+          color: C.ink2,
+          textAlign: 'left' as const,
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          gap: 12,
+        }}
+      >
+        <span>{q}</span>
+        <span style={{
+          flexShrink: 0,
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          border: `1px solid ${C.border}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: C.muted,
+          fontSize: 16,
+          lineHeight: 1,
+        }}>
+          {open ? '−' : '+'}
+        </span>
+      </button>
+      {open && (
+        <p style={{
+          fontFamily: manrope,
+          fontSize: 13,
+          lineHeight: 1.8,
+          color: C.muted,
+          margin: '0 0 18px',
+          paddingRight: 32,
+        }}>{a}</p>
+      )}
+    </div>
   )
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Nav link ──────────────────────────────────────────────────────────────────
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '0 18px',
+        height: '100%',
+        borderRight: `1px solid ${C.border}`,
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase' as const,
+        color: C.muted,
+        fontFamily: manrope,
+        transition: 'color 0.15s',
+      }}
+      onMouseEnter={e => { (e.currentTarget).style.color = C.ink }}
+      onMouseLeave={e => { (e.currentTarget).style.color = C.muted }}
+    >
+      {children}
+    </a>
+  )
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export function LandingPage() {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
-
-  const navLinks = [
-    { label: 'Protocol',   href: '#protocol' },
-    { label: 'Use cases',  href: '#use-cases' },
-    { label: 'Streams',    href: '#streams' },
-    { label: 'Security',   href: '#security' },
-  ]
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <div style={{ background: C.bg, color: C.ink, minHeight: '100dvh', fontFamily: sans }}>
+    <div style={{
+      background: C.bg,
+      color: C.ink,
+      fontFamily: manrope,
+      minHeight: '100dvh',
+      overflowX: 'hidden',
+    }}>
 
-      {/* ── NAV ─────────────────────────────────────────────────────────────── */}
-      <nav style={{ borderBottom: `1px solid ${C.border}`, background: C.bg, position: 'sticky', top: 0, zIndex: 50 }}>
-        <Wrap style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <span style={{ fontFamily: serif, fontSize: 20, color: C.ink, letterSpacing: '-0.01em', flexShrink: 0 }}>FlowPay</span>
+      {/* ── Header ──────────────────────────────────────────────────── */}
+      <header style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+        borderBottom: `1px solid ${C.border}`,
+        background: 'rgba(7,7,7,0.85)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+      }}>
+        <div style={{
+          maxWidth: 1200,
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'stretch',
+          justifyContent: 'space-between',
+          padding: '0 20px',
+          height: 72,
+        }}>
+          {/* Brand */}
+          <a href="#" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            position: 'relative',
+            paddingRight: 20,
+            borderRight: `1px solid ${C.border}`,
+          }}>
+            <span style={{ position: 'absolute', top: 8, left: -4, width: 6, height: 6, background: C.subtle }} />
+            <span style={{ position: 'absolute', bottom: 8, right: -4, width: 6, height: 6, background: C.subtle }} />
+            <Logo size={30} />
+            <div>
+              <div style={{ fontFamily: gloock, fontSize: 16, color: C.ink, lineHeight: 1.1 }}>FlowPay</div>
+              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: C.subtle }}>Spec console</div>
+            </div>
+          </a>
 
           {/* Desktop nav */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 32 }} className="hidden md:flex">
-            {navLinks.map(l => (
-              <a key={l.label} href={l.href} style={{ ...T.caption, fontWeight: 500, color: C.muted, textDecoration: 'none' }}
-                onMouseEnter={e => ((e.target as HTMLAnchorElement).style.color = C.ink)}
-                onMouseLeave={e => ((e.target as HTMLAnchorElement).style.color = C.muted)}>
-                {l.label}
-              </a>
-            ))}
+          <nav style={{ display: 'none', alignItems: 'stretch', height: '100%' }} className="hidden lg:flex">
+            <NavLink href="#streams">Streams</NavLink>
+            <NavLink href="#protocol">Protocol</NavLink>
+            <NavLink href="#security">Security</NavLink>
+            <NavLink href="#faq">FAQ</NavLink>
+          </nav>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 20, borderLeft: `1px solid ${C.border}` }} className="hidden lg:flex">
+            <a
+              href={`${ARC_TESTNET_EXPLORER}/address/${METERED_ESCROW.address}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '9px 16px',
+                borderRadius: 8,
+                background: 'linear-gradient(to bottom, rgba(255,255,255,0.07), rgba(255,255,255,0.025))',
+                border: `1px solid ${C.border}`,
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.5)',
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase' as const,
+                color: C.ink2,
+                fontFamily: manrope,
+              }}
+            >
+              Explorer <ExternalLink size={11} />
+            </a>
+            <ConnectKitButton />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div className="hidden md:block">
-              <ConnectKitButton label="Open app" />
-            </div>
-            {/* Mobile hamburger */}
+          {/* Mobile menu btn */}
+          <div className="flex lg:hidden items-center">
             <button
-              className="flex md:hidden"
-              onClick={() => setMobileNavOpen(o => !o)}
-              style={{ padding: 8, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: mobileNavOpen ? C.bgAlt : 'transparent' }}
-              aria-label="Open navigation"
+              onClick={() => setMobileMenuOpen(o => !o)}
+              style={{
+                width: 40,
+                height: 40,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 8,
+                border: `1px solid ${C.border}`,
+                background: 'linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14)',
+                color: C.muted,
+              }}
             >
-              <Menu size={20} style={{ color: C.ink }} />
+              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
-        </Wrap>
+        </div>
 
-        {/* Mobile drawer */}
-        {mobileNavOpen && (
-          <div className="flex md:hidden" style={{ borderTop: `1px solid ${C.border}`, background: C.bg, flexDirection: 'column' }}>
-            {navLinks.map(l => (
-              <a key={l.label} href={l.href} onClick={() => setMobileNavOpen(false)}
-                style={{ padding: '14px clamp(16px,4vw,40px)', fontSize: 15, fontWeight: 500, color: C.ink2, textDecoration: 'none', borderBottom: `1px solid ${C.border}`, display: 'block', minHeight: 44 }}>
-                {l.label}
+        {/* Mobile menu drawer */}
+        {mobileMenuOpen && (
+          <div style={{
+            borderTop: `1px solid ${C.border}`,
+            padding: '16px 20px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}>
+            {[
+              { href: '#streams', label: 'Streams' },
+              { href: '#protocol', label: 'Protocol' },
+              { href: '#security', label: 'Security' },
+              { href: '#faq', label: 'FAQ' },
+            ].map(link => (
+              <a key={link.href} href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  display: 'block',
+                  padding: '10px 12px',
+                  borderRadius: 7,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase' as const,
+                  color: C.muted,
+                  border: `1px solid transparent`,
+                }}
+                onMouseEnter={e => { (e.currentTarget).style.color = C.ink; (e.currentTarget).style.borderColor = C.border }}
+                onMouseLeave={e => { (e.currentTarget).style.color = C.muted; (e.currentTarget).style.borderColor = 'transparent' }}
+              >
+                {link.label}
               </a>
             ))}
-            <div style={{ padding: '16px clamp(16px,4vw,40px)' }}>
-              <ConnectKitButton label="Open app" />
+            <div style={{ marginTop: 8 }}>
+              <ConnectKitButton />
             </div>
           </div>
         )}
-      </nav>
+      </header>
 
-      {/* ── HERO ────────────────────────────────────────────────────────────── */}
-      <section>
-        <Wrap style={{ paddingTop: 88, paddingBottom: 72 }}>
-          <div className="grid md:grid-cols-12" style={{ alignItems: 'start' }}>
-            {/* Left col */}
-            <div className="md:col-span-7" style={{ paddingRight: 'clamp(0px,5vw,72px)', paddingBottom: 'clamp(40px,5vw,0px)' }}>
-              <div style={{ marginBottom: 28 }}>
-                <Tag>Live on Arc Testnet</Tag>
-              </div>
-              <h1 style={{ ...T.h1, margin: '0 0 28px' }}>
-                On-chain payroll,<br />
-                vesting schedules,<br />
-                <em style={{ fontStyle: 'italic', color: C.ink2 }}>and milestone payments.</em>
-              </h1>
-              <p style={{ ...T.bodyLg, maxWidth: 480, margin: '0 0 16px' }}>
-                FlowPay lets any two parties lock USDC into a smart contract and release it incrementally as obligations are met.
-              </p>
-              <p style={{ ...T.body, maxWidth: 480, margin: '0 0 40px' }}>
-                No intermediary holds the funds. No approval is needed to claim what is already yours. Every payment is a signed, auditable transaction on Arc.
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                <ConnectKitButton label="Connect wallet to start" />
-                <a href="#protocol"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, ...T.caption, fontWeight: 500, color: C.muted, textDecoration: 'none', minHeight: 44, padding: '0 4px' }}
-                  onMouseEnter={e => ((e.target as HTMLAnchorElement).style.color = C.ink)}
-                  onMouseLeave={e => ((e.target as HTMLAnchorElement).style.color = C.muted)}>
-                  How it works <ArrowRight size={13} />
-                </a>
-              </div>
-            </div>
-
-            {/* Right col: contract card (desktop only) */}
-            <div className="hidden md:block md:col-span-5">
-              <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden', background: 'white' }}>
-                <div style={{ padding: '12px 20px', background: C.bgAlt, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
-                  <span style={{ ...T.label, color: C.muted }}>CONTRACT LIVE</span>
-                </div>
-                {[
-                  ['Contract',    'FlowPay MeteredEscrow'],
-                  ['Network',     'Arc Testnet (5042002)'],
-                  ['Token',       'USDC / ERC-20 / 6 dec'],
-                  ['Signing',     'EIP-712 typed data'],
-                  ['Settlement',  'Nonce-ordered receipts'],
-                  ['Refund',      'Trustless after grace'],
-                  ['Fees',        'None (gas only)'],
-                  ['Upgradeable', 'No proxy, immutable'],
-                ].map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 20px', borderBottom: `1px solid ${C.border}`, gap: 12 }}>
-                    <span style={{ ...T.caption, flexShrink: 0 }}>{k}</span>
-                    <span style={{ ...T.mono, textAlign: 'right' as const }}>{v}</span>
-                  </div>
-                ))}
-                <div style={{ padding: '10px 20px', background: C.bgAlt }}>
-                  <a href={`${ARC_TESTNET_EXPLORER}/address/${METERED_ESCROW.address}`} target="_blank" rel="noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, ...T.label, color: C.blue, textDecoration: 'none', letterSpacing: '0.04em' }}>
-                    {METERED_ESCROW.address.slice(0, 18)}...{METERED_ESCROW.address.slice(-6)}
-                    <ExternalLink size={10} />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Wrap>
-
-        {/* Stat strip */}
-        <Rule />
-        <Wrap>
-          <div className="grid grid-cols-2 md:grid-cols-4">
-            {[
-              { n: '0%',   label: 'Protocol fees',       sub: 'Gas is cents on Arc' },
-              { n: '<1s',  label: 'Transaction finality', sub: 'Sub-second blocks' },
-              { n: '3',    label: 'Stream instruments',   sub: 'One shared contract' },
-              { n: '100%', label: 'Self-custodied',       sub: 'Funds in the contract' },
-            ].map(({ n, label, sub }, i) => (
-              <div key={label} style={{
-                padding: 'clamp(24px,3vw,36px) 0',
-                paddingLeft: i % 2 !== 0 ? 'clamp(16px,3vw,40px)' : 0,
-                borderLeft: i % 2 !== 0 ? `1px solid ${C.border}` : 'none',
-              }}
-              className={i >= 2 ? 'border-t md:border-t-0' : ''}
-              >
-                <p style={{ fontFamily: serif, fontSize: 'clamp(28px,3.5vw,48px)', fontWeight: 400, color: C.ink, margin: 0, lineHeight: 1, letterSpacing: '-0.02em' }}>{n}</p>
-                <p style={{ ...T.caption, fontWeight: 600, color: C.ink2, marginTop: 8, marginBottom: 2 }}>{label}</p>
-                <p style={{ ...T.caption, color: C.muted, margin: 0 }}>{sub}</p>
-              </div>
-            ))}
-          </div>
-        </Wrap>
-        <Rule />
-      </section>
-
-      {/* ── PROTOCOL ────────────────────────────────────────────────────────── */}
-      <section id="protocol">
-        <Wrap style={{ paddingTop: 80, paddingBottom: 80 }}>
-          <Eyebrow>Protocol</Eyebrow>
-          <div className="grid md:grid-cols-12" style={{ gap: 'clamp(32px,5vw,64px)', alignItems: 'start' }}>
-
-            {/* Left: sticky heading + body */}
-            <div className="md:col-span-4" style={{ position: 'sticky', top: 72 }}>
-              <h2 style={{ ...T.h2, margin: '0 0 20px' }}>
-                Atomic.<br />
-                <em style={{ fontStyle: 'italic', color: C.ink2 }}>Trustless.</em>
-              </h2>
-              <p style={{ ...T.body, margin: '0 0 20px' }}>
-                Both parties sign EIP-712 typed messages before a single dollar moves.
-                Each signature commits to the deal ID, buyer, seller, price per unit, maximum units, term end, and grace period.
-              </p>
-              <p style={{ ...T.body, margin: 0 }}>
-                Settlement receipts carry a strictly increasing nonce. Replaying or skipping a receipt reverts at the EVM level. Unused funds return automatically once the grace period expires.
-              </p>
-            </div>
-
-            {/* Right: diagram + step cards */}
-            <div className="md:col-span-8">
-              <div style={{ marginBottom: 40 }}>
-                <FlowDiagram />
-              </div>
-              {/* 5-step grid matching the diagram */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 1, background: C.border, borderRadius: 10, overflow: 'hidden' }}>
-                {[
-                  { n: '01', title: 'Both parties sign typed terms',       body: 'The payer and recipient each call signTypedData on the EIP-712 Terms struct, committing to price, unit cap, and deadline before any USDC moves.' },
-                  { n: '02', title: 'Payer approves and deposits USDC',    body: 'The payer calls ERC-20 approve then createAndFundDeal. USDC transfers into the contract itself, not into any wallet FlowPay controls.' },
-                  { n: '03', title: 'Recipient delivers and submits proof', body: 'After each pay period, tranche, or milestone the recipient submits a signed Acceptance struct. The contract verifies nonce order before releasing funds.' },
-                  { n: '04', title: 'Payer co-signs to release funds',     body: 'For milestone and payroll streams the payer co-signs each Acceptance. The EVM verifies both signatures. Neither party can skip a step.' },
-                  { n: '05', title: 'Unused balance returns automatically', body: 'Once term end plus grace period passes, the payer calls refundUnused. No seller signature required. The contract sends remaining USDC back in one call.' },
-                ].map(({ n, title, body }) => (
-                  <div key={n} style={{ background: 'white', padding: '20px 22px', minHeight: 120 }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 10 }}>
-                      <span style={{ ...T.label, color: C.subtle, flexShrink: 0 }}>{n}</span>
-                      <span style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: C.ink }}>{title}</span>
-                    </div>
-                    <p style={{ ...T.caption, lineHeight: 1.72, margin: 0 }}>{body}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Wrap>
-      </section>
-
-      <Rule />
-
-      {/* ── USE CASES ───────────────────────────────────────────────────────── */}
-      <section id="use-cases" style={{ background: C.bgAlt }}>
-        <Wrap style={{ paddingTop: 80, paddingBottom: 80 }}>
-          <Eyebrow>Use cases</Eyebrow>
-
-          {/* Full-width heading + subtext row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: 32, marginBottom: 48, alignItems: 'end' }}>
-            <h2 style={{ ...T.h2, margin: 0 }}>
-              Where FlowPay<br />
-              <em style={{ fontStyle: 'italic', color: C.ink2 }}>replaces trust.</em>
-            </h2>
-            <p style={{ ...T.body, margin: 0, maxWidth: 480 }}>
-              Any situation where one party pays another over time, and both need a guarantee the contract will be honored, is a candidate for FlowPay. No lawyers, no escrow agents, no payment processors.
-            </p>
+      {/* ── Hero ────────────────────────────────────────────────────── */}
+      <section style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        padding: 'clamp(64px, 8vw, 120px) 20px clamp(48px, 6vw, 80px)',
+      }}>
+        <div style={{ maxWidth: 760 }}>
+          <div style={{ marginBottom: 24 }}>
+            <Tag>On-chain payment streams</Tag>
           </div>
 
-          {/* Use case rows + comparison side by side on desktop */}
-          <div className="grid md:grid-cols-2" style={{ gap: 24, marginBottom: 40 }}>
-            {/* Persona rows */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: C.border, borderRadius: 10, overflow: 'hidden' }}>
-              {[
-                { who: 'Remote contractor',     what: 'Employer locks 6 months salary. Contractor claims monthly.', tag: 'Payroll', tagColor: C.blue, tagBorder: '#bfdbfe', tagBg: '#eff6ff' },
-                { who: 'Token grant recipient', what: 'Company locks USDC grant. Vesting runs 4 years with 1-year cliff.', tag: 'Vesting', tagColor: C.purple, tagBorder: '#ddd6fe', tagBg: '#f5f3ff' },
-                { who: 'Freelance developer',   what: 'Client locks full project budget. Paid per delivered milestone.', tag: 'Milestone', tagColor: C.amber, tagBorder: '#fcd34d', tagBg: '#fffbeb' },
-                { who: 'AI agent service',      what: 'API buyer locks a budget. Agent claims per successful call.', tag: 'Milestone', tagColor: C.amber, tagBorder: '#fcd34d', tagBg: '#fffbeb' },
-                { who: 'DAO contributor',       what: 'DAO locks bounty. Contributor claims on completion; DAO signs off.', tag: 'Milestone', tagColor: C.amber, tagBorder: '#fcd34d', tagBg: '#fffbeb' },
-                { who: 'Advisor',               what: 'Company locks advisory fee. Advisor claims each quarter.', tag: 'Payroll', tagColor: C.blue, tagBorder: '#bfdbfe', tagBg: '#eff6ff' },
-              ].map(({ who, what, tag, tagColor, tagBorder, tagBg }) => (
-                <div key={who} style={{ background: 'white', padding: '13px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                  <div>
-                    <p style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: C.ink, margin: '0 0 2px' }}>{who}</p>
-                    <p style={{ ...T.caption, margin: 0 }}>{what}</p>
-                  </div>
-                  <span style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.1em', color: tagColor, border: `1px solid ${tagBorder}`, background: tagBg, borderRadius: 4, padding: '3px 7px', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
-                    {tag.toUpperCase()}
-                  </span>
-                </div>
-              ))}
-            </div>
+          <h1 style={{
+            fontFamily: gloock,
+            fontSize: 'clamp(44px, 6vw, 84px)',
+            fontWeight: 400,
+            lineHeight: 1.04,
+            letterSpacing: '-0.025em',
+            color: C.ink,
+            margin: '0 0 28px',
+          }}>
+            Payroll, vesting, and<br />
+            <span style={{ color: C.gold }}>milestone payments</span><br />
+            built on USDC.
+          </h1>
 
-            {/* Comparison — stacked cards on mobile, mini table on desktop */}
-            <div>
-              <div style={{ background: 'white', borderRadius: 10, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${C.border}` }}>
-                  <h3 style={{ ...T.h3, fontSize: 14, fontWeight: 600, margin: 0 }}>FlowPay vs. the alternatives</h3>
-                </div>
-
-                {/* Mobile: stacked comparison cards */}
-                <div className="flex md:hidden" style={{ flexDirection: 'column', gap: 1, background: C.border }}>
-                  {[
-                    { feature: 'Self-custodied funds',         vals: { FlowPay: true,  'Bank wire': false, Stripe: false, 'Legal escrow': false, Multisig: false } },
-                    { feature: 'No intermediary',              vals: { FlowPay: true,  'Bank wire': false, Stripe: false, 'Legal escrow': false, Multisig: true  } },
-                    { feature: 'Automatic refund path',        vals: { FlowPay: true,  'Bank wire': false, Stripe: false, 'Legal escrow': false, Multisig: false } },
-                    { feature: 'Cryptographic release proof',  vals: { FlowPay: true,  'Bank wire': false, Stripe: false, 'Legal escrow': false, Multisig: true  } },
-                    { feature: 'Zero platform fees',           vals: { FlowPay: true,  'Bank wire': false, Stripe: false, 'Legal escrow': false, Multisig: true  } },
-                    { feature: 'Works globally, instantly',    vals: { FlowPay: true,  'Bank wire': false, Stripe: true,  'Legal escrow': false, Multisig: true  } },
-                  ].map(({ feature, vals }) => (
-                    <div key={feature} style={{ background: 'white', padding: '12px 20px' }}>
-                      <p style={{ fontFamily: sans, fontSize: 12, fontWeight: 600, color: C.ink, margin: '0 0 8px' }}>{feature}</p>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
-                        {Object.entries(vals).map(([name, v]) => (
-                          <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: v ? C.green : C.subtle }}>
-                            {v ? <Check size={11} /> : <X size={11} />}
-                            {name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop: full table */}
-                <div className="hidden md:block" style={{ overflowX: 'auto' as const }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' as const, fontFamily: sans, fontSize: 12 }}>
-                    <thead>
-                      <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                        {['', 'FlowPay', 'Bank wire', 'Stripe', 'Legal escrow', 'Multisig'].map((h, i) => (
-                          <th key={h} style={{ padding: '9px 14px', textAlign: i === 0 ? 'left' as const : 'center' as const, ...T.label, color: C.muted, fontWeight: 600, background: C.bgAlt }}>
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { label: 'Self-custodied funds',        vals: [true, false, false, false, false] },
-                        { label: 'No intermediary required',    vals: [true, false, false, false, true ] },
-                        { label: 'Automatic refund path',       vals: [true, false, false, false, false] },
-                        { label: 'Cryptographic release proof', vals: [true, false, false, false, true ] },
-                        { label: 'Zero platform fees',          vals: [true, false, false, false, true ] },
-                        { label: 'Permissionless deployment',   vals: [true, false, false, false, false] },
-                        { label: 'Works globally, instantly',   vals: [true, false, true,  false, true ] },
-                      ].map(({ label, vals }, ri) => (
-                        <tr key={label} style={{ borderBottom: ri < 6 ? `1px solid ${C.border}` : 'none' }}>
-                          <td style={{ padding: '10px 14px', fontFamily: sans, fontSize: 12, fontWeight: 500, color: C.ink2 }}>{label}</td>
-                          {vals.map((v, ci) => (
-                            <td key={ci} style={{ padding: '10px 14px', textAlign: 'center' as const }}>
-                              {v ? <Check size={13} style={{ color: C.green, display: 'inline-block' }} /> : <X size={13} style={{ color: '#d1d5db', display: 'inline-block' }} />}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Wrap>
-      </section>
-
-      <Rule />
-
-      {/* ── STREAMS ─────────────────────────────────────────────────────────── */}
-      <section id="streams">
-        <Wrap style={{ paddingTop: 80, paddingBottom: 80 }}>
-          <Eyebrow>Stream instruments</Eyebrow>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: 24, marginBottom: 16 }}>
-            <h2 style={{ ...T.h2, margin: 0 }}>
-              One contract,<br />
-              <em style={{ fontStyle: 'italic', color: C.ink2 }}>three instruments.</em>
-            </h2>
-          </div>
-
-          {/* Three stream cards: equal height, aligned rows */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: 1, background: C.border, borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
-            {[
-              {
-                n: 'I',   type: 'Payroll',             sub: 'RECURRING SALARY STREAM',
-                accent: C.blue,   accentLight: '#eff6ff', accentBorder: '#bfdbfe',
-                desc: 'The payer locks a fixed number of pay periods upfront. At the end of each period the employee submits a signed receipt and claims exactly one unit. Unused periods refund to the payer automatically after the grace window.',
-                rows: [
-                  ['Unit',           '1 pay period'],
-                  ['Price per unit',  'Monthly salary in USDC'],
-                  ['Typical cap',     '3 to 12 months'],
-                  ['Grace period',    '30 days'],
-                  ['Refund path',     'Auto after term + grace'],
-                ],
-                eg: '12 months x $4,000/mo = $48,000 locked',
-              },
-              {
-                n: 'II',  type: 'Vesting',             sub: 'LINEAR USDC GRANT',
-                accent: C.purple, accentLight: '#f5f3ff', accentBorder: '#ddd6fe',
-                desc: 'The grantor locks the full USDC amount on day one. Vesting runs in tranches over months or years, with an optional cliff. The beneficiary claims after each tranche date. The grantor can halt future tranches without touching already-vested funds.',
-                rows: [
-                  ['Unit',           '1 vesting tranche'],
-                  ['Price per unit',  'Grant divided by tranches'],
-                  ['Typical cap',     '12 to 48 tranches'],
-                  ['Cliff support',   'Set start date beyond day one'],
-                  ['Cancellation',   'Grantor can close; past tranches safe'],
-                ],
-                eg: '$100,000 over 4 years = 16 x $6,250',
-              },
-              {
-                n: 'III', type: 'Milestone Payments',  sub: 'DELIVERABLE-GATED RELEASES',
-                accent: C.amber,  accentLight: '#fffbeb', accentBorder: '#fcd34d',
-                desc: 'The client locks the full project budget before work begins. After each milestone is delivered, the contractor submits a signed receipt and the client co-signs to acknowledge delivery. Only co-signed milestones release funds.',
-                rows: [
-                  ['Unit',           '1 delivered milestone'],
-                  ['Price per unit',  'Milestone value in USDC'],
-                  ['Typical cap',     '3 to 10 milestones'],
-                  ['Release trigger', 'Both parties sign receipt'],
-                  ['Refund path',     'Auto after deadline + grace'],
-                ],
-                eg: '5 milestones x $2,000 = $10,000 project',
-              },
-            ].map(({ n, type, sub, accent, accentLight, accentBorder, desc, rows, eg }) => (
-              <div key={type} style={{ background: 'white', padding: '28px 24px', display: 'flex', flexDirection: 'column' }}>
-                {/* Title */}
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 13, color: C.muted }}>{n}</span>
-                    <span style={{ fontFamily: serif, fontSize: 21, color: C.ink }}>{type}</span>
-                  </div>
-                  <span style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.1em', color: accent, border: `1px solid ${accentBorder}`, background: accentLight, borderRadius: 4, padding: '3px 7px' }}>
-                    {sub}
-                  </span>
-                </div>
-
-                <Rule style={{ marginBottom: 16 }} />
-
-                {/* Description */}
-                <p style={{ ...T.caption, lineHeight: 1.75, margin: '0 0 20px', flex: 1 }}>{desc}</p>
-
-                {/* Key-value rows — consistent height across cards */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderTop: `1px solid ${C.border}`, marginBottom: 16 }}>
-                  {rows.map(([k, v]) => (
-                    <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: `1px solid ${C.border}`, minHeight: 36 }}>
-                      <span style={{ ...T.caption, flexShrink: 0 }}>{k}</span>
-                      <span style={{ fontFamily: mono, fontSize: 10, color: C.ink2, textAlign: 'right' as const, wordBreak: 'break-word' as const }}>{v}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Example */}
-                <div style={{ borderLeft: `3px solid ${accent}`, paddingLeft: 12, paddingTop: 4, paddingBottom: 4, background: accentLight, borderRadius: '0 6px 6px 0' }}>
-                  <span style={{ fontFamily: mono, fontSize: 10, color: C.ink2 }}>{eg}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Vesting chart */}
-          <div style={{ background: 'white', borderRadius: 12, border: `1px solid ${C.border}`, padding: '24px 28px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-              <div>
-                <p style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: C.ink, margin: '0 0 2px' }}>Vesting schedule visualised</p>
-                <p style={{ ...T.caption, margin: 0 }}>16-month grant with 4-month cliff then linear vesting</p>
-              </div>
-              <Tag>CLIFF + LINEAR</Tag>
-            </div>
-            <VestingChart />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 12, flexWrap: 'wrap' }}>
-              {[
-                { swatch: <div style={{ width: 12, height: 12, borderRadius: 2, background: C.blue }} />, label: 'Vested' },
-                { swatch: <div style={{ width: 12, height: 3, background: C.amber, borderRadius: 1, marginTop: 4 }} />, label: 'Cliff date' },
-                { swatch: <div style={{ width: 12, height: 12, borderRadius: 2, background: C.border }} />, label: 'Locked' },
-              ].map(({ swatch, label }) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {swatch}
-                  <span style={{ ...T.caption }}>{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Wrap>
-      </section>
-
-      <Rule />
-
-      {/* ── SECURITY ────────────────────────────────────────────────────────── */}
-      <section id="security" style={{ background: C.bgAlt }}>
-        <Wrap style={{ paddingTop: 80, paddingBottom: 80 }}>
-          <Eyebrow>Security</Eyebrow>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: 32, marginBottom: 40, alignItems: 'end' }}>
-            <h2 style={{ ...T.h2, margin: 0 }}>
-              Audited.<br />
-              <em style={{ fontStyle: 'italic', color: C.ink2 }}>Self-custody.</em>
-            </h2>
-            <div>
-              <p style={{ ...T.body, margin: '0 0 16px' }}>
-                Deployed as immutable bytecode. FlowPay holds no admin key, runs no upgradeability proxy, and cannot alter the contract after your signatures are recorded on-chain.
-              </p>
-              <p style={{ ...T.body, margin: 0 }}>
-                All guards are standard OpenZeppelin. The pause capability is preserved by disabling renounceOwnership, so an emergency stop is always possible without introducing an upgrade path.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: C.border, borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
-            {[
-              { code: '01', title: 'No upgradeable proxy',                       body: 'The contract is deployed as plain bytecode with no EIP-1967 proxy and no admin slot. FlowPay cannot change the settlement logic, fee structure, or refund path after deployment.' },
-              { code: '02', title: 'Strictly-increasing nonces',                  body: 'Every Acceptance struct carries a nonce that must exceed the previous settlement nonce for that deal. Replay attacks, double-claims, and out-of-order settlements revert at the EVM level before any token transfer occurs.' },
-              { code: '03', title: 'Trustless refund path',                       body: 'Once term end plus grace period passes, the payer calls refundUnused with no signature from the seller. The function checks block.timestamp, transfers remaining USDC to the buyer, and closes the deal in a single call.' },
-              { code: '04', title: 'ReentrancyGuard on all state-changing calls', body: 'createAndFundDeal, settleAcceptedUsage, sellerCloseTerm, and refundUnused all carry the nonReentrant modifier. Cross-contract re-entrancy during USDC transfers cannot manipulate deal state.' },
-              { code: '05', title: 'Pausable with preserved ownership',           body: 'An emergency pause halts all state-changing functions. renounceOwnership is overridden to revert, preventing the owner from accidentally surrendering the pause capability permanently.' },
-            ].map(({ code, title, body }) => (
-              <div key={code} style={{ background: 'white', padding: '18px 22px', display: 'flex', gap: 20, alignItems: 'start' }}>
-                <span style={{ ...T.label, color: C.subtle, paddingTop: 2, flexShrink: 0 }}>{code}</span>
-                <div>
-                  <p style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: C.ink, margin: '0 0 6px' }}>{title}</p>
-                  <p style={{ ...T.caption, lineHeight: 1.72, margin: 0 }}>{body}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Contract address strip */}
-          <div style={{ padding: '14px 20px', background: 'white', border: `1px solid ${C.border}`, borderRadius: 8, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-            <div>
-              <p style={{ ...T.caption, margin: '0 0 3px' }}>FlowPay MeteredEscrow / Arc Testnet</p>
-              <p style={{ fontFamily: mono, fontSize: 11, color: C.ink2, margin: 0, wordBreak: 'break-all' as const }}>{METERED_ESCROW.address}</p>
-            </div>
-            <a href={`${ARC_TESTNET_EXPLORER}/address/${METERED_ESCROW.address}`} target="_blank" rel="noreferrer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, ...T.caption, fontWeight: 600, color: C.blue, textDecoration: 'none', minHeight: 44, flexShrink: 0 }}>
-              View on explorer <ExternalLink size={11} />
-            </a>
-          </div>
-        </Wrap>
-      </section>
-
-      <Rule />
-
-      {/* ── FAQ ─────────────────────────────────────────────────────────────── */}
-      <section>
-        <Wrap style={{ paddingTop: 80, paddingBottom: 80 }}>
-          <Eyebrow>Common questions</Eyebrow>
-          {/* Full-width heading row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 32, marginBottom: 40, alignItems: 'end' }}>
-            <h2 style={{ ...T.h2, margin: 0 }}>
-              What you<br />
-              <em style={{ fontStyle: 'italic', color: C.ink2 }}>should know.</em>
-            </h2>
-            <p style={{ ...T.body, margin: 0 }}>
-              Practical answers about fund safety, seller protections, and the contract design.
-            </p>
-          </div>
-
-          {/* Two-column FAQ grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 1, background: C.border, borderRadius: 10, overflow: 'hidden' }}>
-            {[
-              { q: 'Can the seller take more than was agreed?',        a: 'No. The contract enforces a maximum unit cap. Even if the seller submits a receipt with a higher unit count, the contract reverts. The maximum total payout is unitPrice multiplied by maxUnits, set at signing time.' },
-              { q: 'What happens if the buyer disappears after funding?', a: 'The seller can close the deal early by calling sellerCloseTerm, which settles all verified usage to date and returns the remainder to the buyer. The seller is never stuck waiting for buyer action to get paid.' },
-              { q: 'What if the seller never delivers?',               a: 'The buyer calls refundUnused after term end plus the grace period. No seller signature needed. The full unspent balance returns to the buyer in one transaction.' },
-              { q: 'Is the contract audited?',                         a: 'The contract has been reviewed with Slither static analysis and a balanced security audit covering reentrancy, access control, signature malleability, and nonce ordering. The audit report is available in the repository.' },
-              { q: 'What is the grace period for?',                    a: 'The grace period gives the seller time to submit any final receipts after the term ends. Once the grace period expires, the refund path opens. Typical grace periods are 7 to 30 days depending on the stream type.' },
-              { q: 'Can I use FlowPay on mainnet?',                    a: 'The contract is currently deployed on Arc Testnet. A mainnet deployment requires an independent security audit and Circle account upgrade. The contract code is the same on both networks.' },
-            ].map(({ q, a }, i) => (
-              <div key={i} style={{ background: 'white', padding: '20px 22px' }}>
-                <p style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: C.ink, margin: '0 0 8px' }}>{q}</p>
-                <p style={{ ...T.caption, lineHeight: 1.72, margin: 0 }}>{a}</p>
-              </div>
-            ))}
-          </div>
-        </Wrap>
-      </section>
-
-      <Rule />
-
-      {/* ── CTA ─────────────────────────────────────────────────────────────── */}
-      <section style={{ background: C.bgDark }}>
-        <Wrap style={{ paddingTop: 88, paddingBottom: 88, textAlign: 'center' as const, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
-          <span style={{ ...T.label, color: 'rgba(255,255,255,0.4)', marginBottom: 24, display: 'block' }}>GET STARTED</span>
-          <h2 style={{ fontFamily: serif, fontSize: 'clamp(30px,3.5vw,54px)', fontWeight: 400, letterSpacing: '-0.025em', color: '#f5f4f0', margin: '0 0 16px', lineHeight: 1.1 }}>
-            Set up your first stream<br />
-            <em style={{ fontStyle: 'italic', color: 'rgba(245,244,240,0.55)' }}>in two minutes.</em>
-          </h2>
-          <p style={{ fontFamily: sans, fontSize: 14, color: 'rgba(255,255,255,0.45)', maxWidth: 380, margin: '0 0 40px' }}>
-            Connect a wallet, choose a stream type, sign the terms, and lock your USDC.
+          <p style={{
+            fontFamily: manrope,
+            fontSize: 'clamp(15px, 1.6vw, 18px)',
+            lineHeight: 1.75,
+            color: C.muted,
+            margin: '0 0 40px',
+            maxWidth: '55ch',
+          }}>
+            FlowPay locks USDC on Arc Testnet and releases it according to signed terms. No intermediaries, no custody risk. Both parties sign before a single token moves.
           </p>
-          {/* Centered CTA group */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: '100%' }}>
-            <ConnectKitButton label="Connect wallet to start" />
-            <a href="#protocol"
-              style={{ fontFamily: sans, fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', minHeight: 44, display: 'flex', alignItems: 'center', gap: 6 }}
-              onMouseEnter={e => ((e.target as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.8)')}
-              onMouseLeave={e => ((e.target as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.5)')}>
-              How it works <ArrowRight size={13} />
-            </a>
-          </div>
-        </Wrap>
-      </section>
 
-      {/* ── FOOTER ──────────────────────────────────────────────────────────── */}
-      <footer style={{ borderTop: `1px solid ${C.border}`, background: C.bg }}>
-        <Wrap style={{ paddingTop: 24, paddingBottom: 24 }}>
-          {/* Top row */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontFamily: serif, fontSize: 16, color: C.ink }}>FlowPay</span>
-              <span style={{ width: 1, height: 12, background: C.border, display: 'inline-block' }} />
-              <span style={{ ...T.caption, color: C.muted }}>USDC streams on Arc Testnet</span>
-            </div>
-            {/* Footer links */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 56 }}>
+            <ConnectKitButton />
+            <GhostBtn>
+              <a href="#streams" style={{ color: 'inherit', display: 'flex', alignItems: 'center', gap: 7 }}>
+                How it works <ArrowRight size={14} />
+              </a>
+            </GhostBtn>
+          </div>
+
+          {/* Contract spec card */}
+          <div style={{
+            display: 'inline-block',
+            background: C.bgCard,
+            border: `1px solid ${C.border}`,
+            borderRadius: 10,
+            padding: '16px 20px',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Gold top bar */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(to right, ${C.gold}, transparent)` }} />
+            <p style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: C.subtle, margin: '0 0 10px' }}>Deployed contract</p>
+            <a
+              href={`${ARC_TESTNET_EXPLORER}/address/${METERED_ESCROW.address}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                fontFamily: mono,
+                fontSize: 12,
+                color: C.gold,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              {METERED_ESCROW.address.slice(0, 20)}…{METERED_ESCROW.address.slice(-8)}
+              <ExternalLink size={11} />
+            </a>
+            <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
               {[
-                { label: 'Protocol', href: '#protocol' },
-                { label: 'GitHub', href: 'https://github.com/Adityaakr/pro-escrow', external: true },
-                { label: 'Terms', href: '#' },
-              ].map(({ label, href, external }) => (
-                <a key={label} href={href} {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                  style={{ ...T.caption, color: C.muted, textDecoration: 'none', minHeight: 44, display: 'flex', alignItems: 'center' }}
-                  onMouseEnter={e => ((e.target as HTMLAnchorElement).style.color = C.ink)}
-                  onMouseLeave={e => ((e.target as HTMLAnchorElement).style.color = C.muted)}>
-                  {label}
-                </a>
+                { label: 'Chain', value: 'Arc Testnet' },
+                { label: 'Token', value: 'USDC' },
+                { label: 'Sigs', value: 'EIP-712' },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: C.subtle, margin: '0 0 2px' }}>{label}</p>
+                  <p style={{ fontFamily: manrope, fontSize: 12, fontWeight: 600, color: C.ink2, margin: 0 }}>{value}</p>
+                </div>
               ))}
             </div>
           </div>
-          {/* Bottom row: contract address */}
-          <Rule style={{ marginBottom: 12 }} />
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <a href={`${ARC_TESTNET_EXPLORER}/address/${METERED_ESCROW.address}`} target="_blank" rel="noreferrer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: mono, fontSize: 10, color: C.subtle, textDecoration: 'none', letterSpacing: '0.04em', minHeight: 40 }}>
-              {METERED_ESCROW.address}
-              <ExternalLink size={9} />
-            </a>
-            <span style={{ ...T.caption, color: C.subtle }}>Arc Testnet (5042002)</span>
+        </div>
+      </section>
+
+      <Rule />
+
+      {/* ── Stats ────────────────────────────────────────────────────── */}
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(40px, 5vw, 72px) 20px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          <StatCard value="3" label="Stream types" />
+          <StatCard value="EIP-712" label="Signed terms" />
+          <StatCard value="USDC" label="Native gas on Arc" />
+          <StatCard value="Non-custodial" label="Design" />
+        </div>
+      </section>
+
+      <Rule />
+
+      {/* ── Stream types ─────────────────────────────────────────────── */}
+      <section id="streams" style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(56px, 6vw, 96px) 20px' }}>
+        <div style={{ marginBottom: 48 }}>
+          <Tag>Payment types</Tag>
+          <h2 style={{
+            fontFamily: gloock,
+            fontSize: 'clamp(28px, 3vw, 48px)',
+            fontWeight: 400,
+            lineHeight: 1.1,
+            letterSpacing: '-0.02em',
+            color: C.ink,
+            margin: '14px 0 0',
+          }}>
+            Three ways to move USDC
+          </h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+          <StreamCard
+            title="Payroll"
+            color={C.blue}
+            tag="Monthly"
+            desc="Recurring USDC salary streams with a defined pay period and grace window. Set it, fund it, and let the contract handle the schedule."
+            items={[
+              'Salary locked upfront on Arc Testnet',
+              'Per-period release with clawback grace',
+              'Both parties sign before tokens move',
+            ]}
+          />
+          <StreamCard
+            title="Vesting"
+            color={C.purple}
+            tag="Tranches"
+            desc="Token vesting schedules for founders, employees, and advisors. Define tranches, set the cliff, and the contract enforces the cliff."
+            items={[
+              'Cliff-based tranche releases',
+              'Buyer can reclaim unvested tokens',
+              'EIP-712 typed-data commitment',
+            ]}
+          />
+          <StreamCard
+            title="Milestones"
+            color={C.amber}
+            tag="On delivery"
+            desc="Escrow-style milestone payments for freelancers and contractors. Funds release only when deliverables are confirmed."
+            items={[
+              'Funds locked until milestone approved',
+              'Recipient and funder both sign terms',
+              'Dispute handled off-chain by agreement',
+            ]}
+          />
+        </div>
+      </section>
+
+      <Rule />
+
+      {/* ── Protocol flow ────────────────────────────────────────────── */}
+      <section id="protocol" style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(56px, 6vw, 96px) 20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 48, alignItems: 'center' }}>
+          <div>
+            <Tag>Protocol</Tag>
+            <h2 style={{
+              fontFamily: gloock,
+              fontSize: 'clamp(26px, 2.8vw, 44px)',
+              fontWeight: 400,
+              lineHeight: 1.1,
+              letterSpacing: '-0.02em',
+              color: C.ink,
+              margin: '14px 0 16px',
+            }}>
+              How a stream<br />gets funded
+            </h2>
+            <p style={{ fontFamily: manrope, fontSize: 14, lineHeight: 1.8, color: C.muted, margin: '0 0 32px', maxWidth: '46ch' }}>
+              Every FlowPay stream follows the same four-step sequence. No trusted third party holds your funds at any step.
+            </p>
           </div>
-        </Wrap>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {[
+              { n: '01', title: 'Define terms', body: 'Both parties agree on amount, schedule, and conditions off-chain.' },
+              { n: '02', title: 'Recipient signs', body: 'Recipient signs an EIP-712 typed-data commitment to the stream terms.' },
+              { n: '03', title: 'Funder signs + approves', body: 'Funder countersigns and approves USDC spend for the contract.' },
+              { n: '04', title: 'Stream goes live', body: 'A single transaction creates the deal and locks USDC. Both sigs verified on-chain.' },
+            ].map((step, i, arr) => (
+              <div key={step.n} style={{
+                display: 'flex',
+                gap: 16,
+                paddingBottom: i < arr.length - 1 ? 28 : 0,
+                position: 'relative',
+              }}>
+                {/* Connector line */}
+                {i < arr.length - 1 && (
+                  <div style={{
+                    position: 'absolute',
+                    left: 17,
+                    top: 36,
+                    bottom: 4,
+                    width: 1,
+                    background: `linear-gradient(to bottom, ${C.gold}, transparent)`,
+                    opacity: 0.25,
+                  }} />
+                )}
+                <div style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '50%',
+                  background: C.goldDim,
+                  border: `1px solid rgba(232,195,130,0.3)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontFamily: mono,
+                  fontSize: 10,
+                  color: C.gold,
+                  letterSpacing: '0.05em',
+                  flexShrink: 0,
+                }}>
+                  {step.n}
+                </div>
+                <div>
+                  <p style={{ fontFamily: manrope, fontSize: 14, fontWeight: 700, color: C.ink, margin: '6px 0 4px' }}>{step.title}</p>
+                  <p style={{ fontFamily: manrope, fontSize: 13, lineHeight: 1.7, color: C.muted, margin: 0 }}>{step.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <Rule />
+
+      {/* ── Security ─────────────────────────────────────────────────── */}
+      <section id="security" style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(56px, 6vw, 96px) 20px' }}>
+        <div style={{ textAlign: 'center' as const, marginBottom: 48 }}>
+          <Tag>Security</Tag>
+          <h2 style={{
+            fontFamily: gloock,
+            fontSize: 'clamp(26px, 2.8vw, 44px)',
+            fontWeight: 400,
+            lineHeight: 1.15,
+            letterSpacing: '-0.02em',
+            color: C.ink,
+            margin: '14px 0 0',
+          }}>
+            Built for trust
+          </h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          {[
+            {
+              icon: <Lock size={20} style={{ color: C.gold }} />,
+              title: 'Non-custodial',
+              body: 'No third party ever holds your USDC. Funds go directly into the on-chain contract and are released by cryptographic proof.',
+            },
+            {
+              icon: <Shield size={20} style={{ color: C.gold }} />,
+              title: 'Dual-signature',
+              body: 'Both funder and recipient sign EIP-712 typed data before the deal is created. Forged terms cannot be accepted.',
+            },
+            {
+              icon: <Zap size={20} style={{ color: C.gold }} />,
+              title: 'USDC on Arc',
+              body: 'All transactions run on Arc Testnet where USDC is the native gas token. Fees are stable and predictable, paid in the same asset you transfer.',
+            },
+            {
+              icon: <Check size={20} style={{ color: C.gold }} />,
+              title: 'Grace periods',
+              body: 'Every stream has a configurable grace window after term end, giving the funder time to settle disputes before reclaiming unlocked funds.',
+            },
+          ].map(card => (
+            <div key={card.title} style={{
+              padding: '24px 22px',
+              background: C.bgCard,
+              border: `1px solid ${C.border}`,
+              borderRadius: 10,
+            }}>
+              <div style={{ marginBottom: 12 }}>{card.icon}</div>
+              <h3 style={{ fontFamily: gloock, fontSize: 18, fontWeight: 400, color: C.ink, margin: '0 0 10px' }}>{card.title}</h3>
+              <p style={{ fontFamily: manrope, fontSize: 13, lineHeight: 1.75, color: C.muted, margin: 0 }}>{card.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Rule />
+
+      {/* ── Comparison table ─────────────────────────────────────────── */}
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(56px, 6vw, 96px) 20px' }}>
+        <div style={{ marginBottom: 40 }}>
+          <Tag>Why FlowPay</Tag>
+          <h2 style={{
+            fontFamily: gloock,
+            fontSize: 'clamp(26px, 2.8vw, 44px)',
+            fontWeight: 400,
+            lineHeight: 1.15,
+            letterSpacing: '-0.02em',
+            color: C.ink,
+            margin: '14px 0 0',
+          }}>
+            Different by design
+          </h2>
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${C.borderHi}` }}>
+                {['Feature', 'FlowPay', 'Bank transfer', 'Crypto escrow'].map((h, i) => (
+                  <th key={h} style={{
+                    padding: '12px 16px',
+                    fontFamily: manrope,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase' as const,
+                    color: i === 1 ? C.gold : C.muted,
+                    textAlign: i === 0 ? ('left' as const) : ('center' as const),
+                    background: i === 1 ? C.goldDim : 'transparent',
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['Non-custodial',     true,  false, false],
+                ['Dual-signature',    true,  false, true],
+                ['Stable gas fee',    true,  true,  false],
+                ['Programmable',      true,  false, false],
+                ['Instant settlement',true,  false, false],
+                ['Open source',       true,  false, false],
+              ].map(([label, fp, bank, esc]) => (
+                <tr key={String(label)} style={{ borderBottom: `1px solid ${C.border}` }}>
+                  <td style={{ padding: '14px 16px', fontFamily: manrope, fontSize: 13, color: C.ink2 }}>{label}</td>
+                  {[fp, bank, esc].map((v, i) => (
+                    <td key={i} style={{
+                      padding: '14px 16px',
+                      textAlign: 'center' as const,
+                      background: i === 0 ? C.goldDim : 'transparent',
+                    }}>
+                      {v
+                        ? <Check size={15} style={{ color: i === 0 ? C.gold : C.green, margin: '0 auto', display: 'block' }} />
+                        : <X size={15} style={{ color: C.subtle, margin: '0 auto', display: 'block' }} />
+                      }
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile stacked */}
+        <div className="flex md:hidden" style={{ flexDirection: 'column', gap: 10 }}>
+          {[
+            ['Non-custodial',      true, false, false],
+            ['Dual-signature',     true, false, true],
+            ['Stable gas fee',     true, true,  false],
+            ['Programmable',       true, false, false],
+            ['Instant settlement', true, false, false],
+          ].map(([label, fp]) => (
+            <div key={String(label)} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '13px 16px',
+              background: C.bgCard,
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+            }}>
+              <span style={{ fontFamily: manrope, fontSize: 13, color: C.ink2 }}>{label}</span>
+              {fp
+                ? <Check size={14} style={{ color: C.gold }} />
+                : <X size={14} style={{ color: C.subtle }} />
+              }
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Rule />
+
+      {/* ── FAQ ──────────────────────────────────────────────────────── */}
+      <section id="faq" style={{ maxWidth: 760, margin: '0 auto', padding: 'clamp(56px, 6vw, 96px) 20px' }}>
+        <div style={{ textAlign: 'center' as const, marginBottom: 48 }}>
+          <Tag>FAQ</Tag>
+          <h2 style={{
+            fontFamily: gloock,
+            fontSize: 'clamp(26px, 2.8vw, 44px)',
+            fontWeight: 400,
+            letterSpacing: '-0.02em',
+            color: C.ink,
+            margin: '14px 0 0',
+          }}>
+            Common questions
+          </h2>
+        </div>
+        {[
+          {
+            q: 'What happens if the recipient does not deliver?',
+            a: 'The funder can reclaim unlocked USDC after the grace period expires. Any amount already settled to the recipient stays with them. Both parties should agree on dispute resolution off-chain before signing.',
+          },
+          {
+            q: 'What wallet do I need?',
+            a: 'Any EVM wallet that can add a custom network. Click "Connect wallet" and add Arc Testnet when prompted (chain ID 5042002, RPC https://rpc.testnet.arc.io). MetaMask and WalletConnect are both supported.',
+          },
+          {
+            q: 'How does the USDC approval work?',
+            a: 'Before the stream is created, you approve the MeteredEscrow contract to spend exactly the locked amount from your wallet. The contract then pulls that exact amount in the same transaction that creates the stream.',
+          },
+          {
+            q: 'Is this on mainnet?',
+            a: 'FlowPay currently runs on Arc Testnet only. All USDC used is test USDC with no real-world value. Use the "Get test USDC" button in Arc Studio to fund your wallet.',
+          },
+          {
+            q: 'What is the gas token on Arc?',
+            a: 'On Arc, USDC is the native gas token. This means both the transferred amount and the transaction fee come from the same USDC balance, so you never need a separate ETH for gas.',
+          },
+          {
+            q: 'Can I cancel a stream early?',
+            a: 'A stream can be settled early if both parties agree off-chain and the buyer calls the settle function. The contract releases earned units to the recipient and returns the remainder to the buyer.',
+          },
+        ].map(faq => <FaqItem key={faq.q} q={faq.q} a={faq.a} />)}
+      </section>
+
+      <Rule />
+
+      {/* ── CTA ──────────────────────────────────────────────────────── */}
+      <section style={{
+        background: `linear-gradient(135deg, rgba(232,195,130,0.07) 0%, transparent 60%)`,
+        borderTop: `1px solid rgba(232,195,130,0.15)`,
+        padding: 'clamp(56px, 6vw, 96px) 20px',
+        textAlign: 'center' as const,
+      }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <h2 style={{
+            fontFamily: gloock,
+            fontSize: 'clamp(30px, 3.5vw, 52px)',
+            fontWeight: 400,
+            lineHeight: 1.1,
+            letterSpacing: '-0.025em',
+            color: C.ink,
+            margin: '0 0 18px',
+          }}>
+            Start your first stream
+          </h2>
+          <p style={{ fontFamily: manrope, fontSize: 15, lineHeight: 1.75, color: C.muted, margin: '0 0 36px', maxWidth: '44ch', marginLeft: 'auto', marginRight: 'auto' }}>
+            Connect your wallet, fund a stream, and let the contract handle the rest.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <ConnectKitButton />
+            <GoldBtn>
+              <a
+                href={`${ARC_TESTNET_EXPLORER}/address/${METERED_ESCROW.address}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: 'inherit', display: 'flex', alignItems: 'center', gap: 7 }}
+              >
+                View contract <ExternalLink size={13} />
+              </a>
+            </GoldBtn>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ───────────────────────────────────────────────────── */}
+      <footer style={{
+        borderTop: `1px solid ${C.border}`,
+        padding: '28px 20px',
+        maxWidth: 1200,
+        margin: '0 auto',
+      }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Logo size={22} />
+            <span style={{ fontFamily: gloock, fontSize: 14, color: C.muted }}>FlowPay</span>
+            <span style={{ color: C.subtle, fontSize: 10 }}>·</span>
+            <span style={{ fontFamily: mono, fontSize: 10, color: C.subtle, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>Arc Testnet</span>
+          </div>
+          <div style={{ display: 'flex', gap: 20 }}>
+            <a
+              href={`${ARC_TESTNET_EXPLORER}/address/${METERED_ESCROW.address}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontFamily: manrope, fontSize: 12, color: C.subtle, display: 'flex', alignItems: 'center', gap: 5 }}
+            >
+              Contract <ExternalLink size={10} />
+            </a>
+            <a href="#faq" style={{ fontFamily: manrope, fontSize: 12, color: C.subtle }}>FAQ</a>
+            <a href="#streams" style={{ fontFamily: manrope, fontSize: 12, color: C.subtle }}>Docs</a>
+          </div>
+        </div>
       </footer>
 
     </div>

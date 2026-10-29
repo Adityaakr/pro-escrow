@@ -154,7 +154,7 @@ function EmptyDetail({ onNewStream }: { onNewStream: () => void }) {
   return (
     <div style={{ background: 'var(--bg-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '80px 24px', textAlign: 'center' }}>
       <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px' }}>Select a stream to view details</p>
-      <button onClick={() => onNewStream()} style={{ padding: '10px 20px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, minHeight: 44 }}>
+      <button onClick={() => onNewStream()} style={{ padding: '10px 20px', borderRadius: 'var(--radius-sm)', background: 'linear-gradient(to bottom, #f0d09a, #e8c382)', color: '#351e10', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', minHeight: 44, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 12px rgba(232,195,130,0.2)' }}>
         + New stream
       </button>
     </div>
@@ -184,7 +184,7 @@ function ListPanel({
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>Your streams</span>
         <button
           onClick={() => onNewStream()}
-          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 600, minHeight: 36 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 12px', borderRadius: 'var(--radius-sm)', background: 'linear-gradient(to bottom, #f0d09a, #e8c382)', color: '#351e10', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', minHeight: 36, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)' }}
         >
           <Plus size={12} /> New
         </button>
@@ -209,8 +209,9 @@ function ListPanel({
             style={{
               padding: '5px 11px', borderRadius: 20, fontSize: 11, fontWeight: 600,
               border: '1px solid var(--border)',
-              background: filterType === t ? 'var(--accent)' : 'var(--bg-white)',
-              color: filterType === t ? 'white' : 'var(--muted)',
+              background: filterType === t ? 'rgba(232,195,130,0.15)' : 'var(--bg-white)',
+              color: filterType === t ? 'var(--accent)' : 'var(--muted)',
+              borderColor: filterType === t ? 'rgba(232,195,130,0.35)' : 'var(--border)',
               cursor: 'pointer', minHeight: 32,
             }}
           >
@@ -231,7 +232,7 @@ function ListPanel({
           <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 12px' }}>
             {filterType !== 'all' ? `No ${filterType} streams` : 'No streams yet'}
           </p>
-          <button onClick={() => onNewStream()} style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 600, minHeight: 40 }}>
+          <button onClick={() => onNewStream()} style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', background: 'linear-gradient(to bottom, #f0d09a, #e8c382)', color: '#351e10', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', minHeight: 40, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)' }}>
             Create one
           </button>
         </div>

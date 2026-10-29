@@ -47,10 +47,12 @@ export function DashboardView({ onCreateStream, onViewStreams, refreshTick }: Da
     const go = async () => {
       setLoading(true)
       try {
+        const head = await publicClient.getBlockNumber()
+        const fromBlock = head > 200000n ? head - 200000n : 0n
         const logs = await publicClient.getLogs({
           address: METERED_ESCROW.address,
           event: parseAbiItem('event DealFunded(uint256 indexed dealId, address indexed buyer, address indexed seller, address payee, uint256 deposit, bytes32 termsHash)'),
-          fromBlock: 0n, toBlock: 'latest',
+          fromBlock, toBlock: 'latest',
         })
         if (cancelled) return
         const seen = new Set<string>()
@@ -117,7 +119,7 @@ export function DashboardView({ onCreateStream, onViewStreams, refreshTick }: Da
                 {icon}
               </div>
             </div>
-            <div style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 28, color: 'var(--ink)', lineHeight: 1, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+            <div style={{ fontFamily: 'Gloock, Georgia, serif', fontSize: 28, color: 'var(--ink)', lineHeight: 1, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 5 }}>{sub}</div>
           </div>
         ))}
@@ -181,7 +183,7 @@ export function DashboardView({ onCreateStream, onViewStreams, refreshTick }: Da
             <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 20px' }}>Create your first payroll, vesting, or milestone stream.</p>
             <button
               onClick={() => onCreateStream()}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, minHeight: 44 }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 'var(--radius-sm)', background: 'linear-gradient(to bottom, #f0d09a, #e8c382)', color: '#351e10', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', minHeight: 44, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 12px rgba(232,195,130,0.2)' }}
             >
               <Plus size={14} /> Create first stream
             </button>

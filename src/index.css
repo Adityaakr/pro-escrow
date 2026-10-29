@@ -2,85 +2,129 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Aura dark theme tokens ───────────────────────────────────────────────── */
 :root {
   /* Canvas */
-  --bg:           #f7f7f6;
-  --bg-white:     #ffffff;
-  --surface:      #ffffff;
-  --surface-muted:#f2f2f0;
-  --surface-hover:#eceae6;
+  --bg:            #070707;
+  --bg-white:      #0f0f0f;
+  --surface:       #111111;
+  --surface-muted: #161616;
+  --surface-hover: #1e1e1e;
 
   /* Ink */
-  --ink:          #111110;
-  --ink-2:        #3d3c38;
-  --muted:        #6f6e69;
-  --subtle:       #a8a49e;
+  --ink:           #f4f4f0;
+  --ink-2:         #c8c6be;
+  --muted:         #888580;
+  --subtle:        #4e4c47;
 
   /* Borders */
-  --border:       #e6e4df;
-  --border-strong:#c9c5bc;
+  --border:        rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.16);
 
-  /* Accent — dark navy */
-  --accent:       #0f172a;
-  --accent-fg:    #ffffff;
-  --accent-light: rgba(15,23,42,0.06);
-  --accent-hover: #1e293b;
+  /* Accent — warm gold */
+  --accent:        #e8c382;
+  --accent-fg:     #351e10;
+  --accent-light:  rgba(232,195,130,0.10);
+  --accent-hover:  #f0d09a;
 
   /* Semantic */
-  --blue:         #2563eb;
-  --blue-light:   rgba(37,99,235,0.09);
-  --green:        #16a34a;
-  --green-light:  rgba(22,163,74,0.09);
-  --amber:        #b45309;
-  --amber-light:  rgba(180,83,9,0.09);
-  --red:          #dc2626;
-  --red-light:    rgba(220,38,38,0.07);
-  --purple:       #6d28d9;
-  --purple-light: rgba(109,40,217,0.09);
+  --blue:          #60a5fa;
+  --blue-light:    rgba(96,165,250,0.12);
+  --green:         #4ade80;
+  --green-light:   rgba(74,222,128,0.12);
+  --amber:         #fbbf24;
+  --amber-light:   rgba(251,191,36,0.12);
+  --red:           #f87171;
+  --red-light:     rgba(248,113,113,0.10);
+  --purple:        #c084fc;
+  --purple-light:  rgba(192,132,252,0.12);
 
   /* Layout */
-  --sidebar-w:    220px;
-  --topbar-h:     52px;
-  --radius:       10px;
-  --radius-sm:    7px;
-  --shadow-sm:    0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow:       0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --sidebar-w:     220px;
+  --topbar-h:      60px;
+  --radius:        10px;
+  --radius-sm:     7px;
+  --shadow-sm:     0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow:        0 4px 16px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3);
 }
 
+/* ── Reset ───────────────────────────────────────────────────────────────── */
 * { box-sizing: border-box; }
+
+html {
+  background: var(--bg);
+}
 
 body {
   margin: 0;
-  font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
+  font-family: 'Manrope', sans-serif;
   background: var(--bg);
   color: var(--ink);
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
+  /* Aura grid overlay */
+  background-image:
+    linear-gradient(to right,  rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 5rem 5rem;
 }
 
-/* Typography */
-.serif  { font-family: 'Instrument Serif', Georgia, serif; }
+/* Noise overlay handled via pseudo — applied on html */
+html::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
+}
+
+/* Top glow */
+html::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  top: 0;
+  height: 200px;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.06), transparent);
+}
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+.serif  { font-family: 'Gloock', Georgia, serif; }
 .mono   { font-family: 'JetBrains Mono', Menlo, monospace; font-size: 0.82em; }
+.manrope { font-family: 'Manrope', sans-serif; }
 
-/* Scrollbar */
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-track { background: #070707; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #e8c382; }
 
-/* Form elements */
+/* ── Form elements ────────────────────────────────────────────────────────── */
 input, textarea, select {
-  font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
+  font-family: 'Manrope', sans-serif;
   font-size: 14px;
+  background: var(--surface-muted);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 input:focus, textarea:focus, select:focus {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--accent);
   outline-offset: -1px;
 }
+input::placeholder, textarea::placeholder {
+  color: var(--subtle);
+}
 
-/* Status badges */
+/* ── Status badges ──────────────────────────────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -98,13 +142,29 @@ input:focus, textarea:focus, select:focus {
 .badge-closed   { background: var(--surface-muted); color: var(--muted);  }
 .badge-pending  { background: var(--amber-light);   color: var(--amber);  }
 
-/* Card base */
+/* ── Card base ────────────────────────────────────────────────────────────── */
 .card {
   background: var(--bg-white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
-/* Button resets */
+/* Glass card variant */
+.glass {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.09);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Inset glow on primary surfaces */
+.inset-glow {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.6);
+}
+
+/* ── Button resets ─────────────────────────────────────────────────────── */
 button { cursor: pointer; border: none; background: none; padding: 0; font-family: inherit; }
 a { text-decoration: none; }
+
+/* ── Selection ──────────────────────────────────────────────────────────── */
+::selection { background: #e8c382; color: #351e10; }

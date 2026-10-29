@@ -223,36 +223,25 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
     })
   }
 
-  if (approveSuccess && step === 'approve') setStep('fund')
-  if (fundSuccess && step === 'fund' && termsData) {
-    // Persist to sessionStorage so StreamsList shows it immediately
-    // even before the chain indexes the DealFunded event.
-    if (address && streamType) {
-      const localKey = `flowpay:streams:${address.toLowerCase()}`
-      try {
-        const existing: Array<{dealId: string; type: string; deposit: string}> = JSON.parse(sessionStorage.getItem(localKey) ?? '[]')
-        const newEntry = { dealId: String(termsData.dealId), type: streamType, deposit: String(prepaidMicro) }
-        if (!existing.find(e => e.dealId === newEntry.dealId)) {
-          existing.unshift(newEntry)
-          sessionStorage.setItem(localKey, JSON.stringify(existing))
-        }
-      } catch { /* ignore */ }
-    }
-    setStep('done')
-    onCreated(termsData.dealId as bigint)
-  }
+  // Compute effective wizard step: override 'approve'->'fund' once approval confirmed,
+  // and 'fund'->'done' once funding confirmed. This avoids setState-in-render and setState-in-effect.
+  const effectiveStep: WizStep = (() => {
+    if (step === 'approve' && approveSuccess) return 'fund'
+    if (step === 'fund' && fundSuccess) return 'done'
+    return step
+  })()
 
   const typeColor = streamType ? TYPE_COLOR[streamType] : 'var(--accent)'
 
   // TYPE PICKER
-  if (step === 'type') {
+  if (effectiveStep === 'type') {
     return (
       <div style={{ maxWidth: 560 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>
             <ArrowLeft size={14} /> Back
           </button>
-          <h2 style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 20, color: 'var(--ink)', margin: 0, fontWeight: 400 }}>Choose a stream type</h2>
+          <h2 style={{ fontFamily: 'Gloock, Georgia, serif', fontSize: 20, color: 'var(--ink)', margin: 0, fontWeight: 400 }}>Choose a stream type</h2>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {STREAM_TYPES.map(t => (
@@ -294,14 +283,14 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   if (!meta || !streamType) return null
 
   // FORM
-  if (step === 'form') {
+  if (effectiveStep === 'form') {
     return (
-      <WizCard typeColor={typeColor} step={step} onBack={() => setStep('type')}>
+      <WizCard typeColor={typeColor} step={effectiveStep} onBack={() => setStep('type')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <div style={{ width: 32, height: 32, borderRadius: 8, background: TYPE_BG[streamType], color: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {TYPE_ICON[streamType]}
           </div>
-          <h2 style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: 18, color: 'var(--ink)', margin: 0, fontWeight: 400 }}>New {meta.label} stream</h2>
+          <h2 style={{ fontFamily: 'Gloock, Georgia, serif', fontSize: 18, color: 'var(--ink)', margin: 0, fontWeight: 400 }}>New {meta.label} stream</h2>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -362,9 +351,9 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   }
 
   // SIGN RECIPIENT
-  if (step === 'sign-recipient') {
+  if (effectiveStep === 'sign-recipient') {
     return (
-      <WizCard typeColor={typeColor} step={step} onBack={() => setStep('form')}>
+      <WizCard typeColor={typeColor} step={effectiveStep} onBack={() => setStep('form')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <div style={{ width: 36, height: 36, borderRadius: '50%', background: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>1</div>
           <div>
@@ -381,9 +370,9 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   }
 
   // SIGN FUNDER
-  if (step === 'sign-funder') {
+  if (effectiveStep === 'sign-funder') {
     return (
-      <WizCard typeColor={typeColor} step={step} onBack={() => setStep('sign-recipient')}>
+      <WizCard typeColor={typeColor} step={effectiveStep} onBack={() => setStep('sign-recipient')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <div style={{ width: 36, height: 36, borderRadius: '50%', background: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>2</div>
           <div>
@@ -397,9 +386,9 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   }
 
   // APPROVE
-  if (step === 'approve') {
+  if (effectiveStep === 'approve') {
     return (
-      <WizCard typeColor={typeColor} step={step}>
+      <WizCard typeColor={typeColor} step={effectiveStep}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <div style={{ width: 36, height: 36, borderRadius: '50%', background: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>3</div>
           <div>
@@ -414,9 +403,9 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
   }
 
   // FUND
-  if (step === 'fund') {
+  if (effectiveStep === 'fund') {
     return (
-      <WizCard typeColor={typeColor} step={step}>
+      <WizCard typeColor={typeColor} step={effectiveStep}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <div style={{ width: 36, height: 36, borderRadius: '50%', background: typeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>4</div>
           <div>
@@ -424,7 +413,7 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
             <p style={{ fontSize: 12, color: 'var(--muted)', margin: '3px 0 0' }}>Lock {fmtUSDC(prepaidMicro)} USDC on-chain. Gas is paid in USDC on Arc.</p>
           </div>
         </div>
-        <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#92400e' }}>
+        <div style={{ background: 'rgba(232,195,130,0.10)', border: '1px solid rgba(232,195,130,0.25)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 14, fontSize: 12, color: 'var(--accent)' }}>
           MetaMask may show "Network fee: Unavailable" on Arc because gas is USDC. This is normal — tap "Review alert" then confirm to proceed.
         </div>
         <TxButton onClick={() => { void handleFund() }} isPending={fundPending} isConfirming={fundConfirming} label="Fund stream" />
@@ -433,7 +422,20 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
     )
   }
 
-  // DONE
+  // DONE — persist to sessionStorage and notify parent once
+  if (effectiveStep === 'done' && termsData && fundHash) {
+    if (address && streamType) {
+      const localKey = `flowpay:streams:${address.toLowerCase()}`
+      try {
+        const existing = JSON.parse(sessionStorage.getItem(localKey) ?? '[]') as unknown as Array<{dealId: string; type: string; deposit: string}>
+        const newEntry = { dealId: String(termsData.dealId), type: streamType, deposit: String(prepaidMicro) }
+        if (!existing.find(e => e.dealId === newEntry.dealId)) {
+          existing.unshift(newEntry)
+          sessionStorage.setItem(localKey, JSON.stringify(existing))
+        }
+      } catch { /* ignore */ }
+    }
+  }
   return (
     <div style={{ maxWidth: 480 }}>
       <div style={{ background: 'var(--bg-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '28px 24px' }}>
@@ -462,10 +464,18 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
 
         {fundHash && (
           <a href={`${ARC_TESTNET_EXPLORER}/tx/${fundHash}`} target="_blank" rel="noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, color: 'var(--blue)' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, color: 'var(--blue)', marginBottom: 12 }}>
             View on explorer <ExternalLink size={12} />
           </a>
         )}
+        <div>
+          <button
+            onClick={() => termsData && onCreated(termsData.dealId as bigint)}
+            style={{ width: '100%', padding: '10px 16px', borderRadius: 'var(--radius-sm)', background: 'linear-gradient(to bottom, #f0d09a, #e8c382)', color: '#351e10', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', cursor: 'pointer', border: 'none', marginTop: 4, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 14px rgba(232,195,130,0.2)' }}
+          >
+            View stream
+          </button>
+        </div>
       </div>
     </div>
   )
