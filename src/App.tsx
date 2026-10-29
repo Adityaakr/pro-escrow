@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useReadContract } from 'wagmi'
 import { ConnectKitButton } from 'connectkit'
 import { LayoutDashboard, ArrowRightLeft, Plus, Briefcase, TrendingUp, Flag, ChevronRight, ArrowRight } from 'lucide-react'
 import { NetworkTenet } from '@web3icons/react'
@@ -51,6 +51,72 @@ const TYPE_LABELS: Record<StreamType, string> = {
   payroll: 'Payroll',
   vesting: 'Vesting',
   escrow:  'Milestones',
+}
+
+// ── USDC balance pill ─────────────────────────────────────────────────────────
+// Arc: USDC is both native gas and ERC-20. We read the ERC-20 view (6 decimals)
+// from the token contract to show a single canonical balance.
+const USDC_ADDRESS = '0x3600000000000000000000000000000000000000' as const
+const ERC20_BALANCE_ABI = [{
+  name: 'balanceOf',
+  type: 'function' as const,
+  stateMutability: 'view' as const,
+  inputs: [{ name: 'account', type: 'address' }],
+  outputs: [{ name: '', type: 'uint256' }],
+}] as const
+
+function UsdcBalance({ address }: { address: `0x${string}` }) {
+  const { data, isLoading } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: ERC20_BALANCE_ABI,
+    functionName: 'balanceOf',
+    args: [address],
+    chainId: 5042002,
+  })
+
+  const formatted = data !== undefined
+    ? (Number(data) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : null
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      padding: '0 16px',
+      borderRight: '1px solid var(--border)',
+      height: '100%',
+    }}>
+      {/* USDC dot */}
+      <span style={{
+        width: 7, height: 7,
+        borderRadius: '50%',
+        background: isLoading ? 'var(--subtle)' : 'var(--accent)',
+        boxShadow: isLoading ? 'none' : '0 0 6px rgba(232,195,130,0.6)',
+        flexShrink: 0,
+      }} />
+      <div style={{ lineHeight: 1.2 }}>
+        <div style={{
+          fontFamily: 'JetBrains Mono, Menlo, monospace',
+          fontSize: 13,
+          fontWeight: 500,
+          color: '#fff',
+          letterSpacing: '-0.02em',
+        }}>
+          {isLoading ? '···' : formatted !== null ? formatted : '—'}
+        </div>
+        <div style={{
+          fontFamily: 'Manrope, sans-serif',
+          fontSize: 9,
+          fontWeight: 600,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase' as const,
+          color: 'var(--subtle)',
+          marginTop: 1,
+        }}>USDC balance</div>
+      </div>
+    </div>
+  )
 }
 
 // ── Sidebar — left-bordered panel, matches reference brand block aesthetic ────
@@ -203,7 +269,9 @@ function Sidebar({ view, setView, onCreateStream }: {
 }
 
 // ── Topbar — exact reference header structure ─────────────────────────────────
-function Topbar({ title, onNewStream }: { title: string; onNewStream: () => void }) {
+function Topbar({ title, onNewStream, address }: {
+  title: string; onNewStream: () => void; address?: `0x${string}`
+}) {
   return (
     <header style={{
       height: 'var(--topbar-h)',      /* min-h-20 = 80px */
@@ -257,6 +325,8 @@ function Topbar({ title, onNewStream }: { title: string; onNewStream: () => void
           <NetworkTenet variant="branded" size={13} />
           Arc Testnet
         </div>
+        {/* USDC balance — shown when wallet is connected */}
+        {address && <UsdcBalance address={address} />}
       </nav>
 
       {/* CTA group — matches reference right-side buttons */}
@@ -413,7 +483,7 @@ export default function App() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-        <Topbar title={TITLES[view]} onNewStream={() => openCreate()} />
+        <Topbar title={TITLES[view]} onNewStream={() => openCreate()} address={address} />
 
         <main style={{
           flex: 1,

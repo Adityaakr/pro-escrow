@@ -295,8 +295,13 @@ export function CreateStream({ initialType, onCreated, onBack }: CreateStreamPro
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <Field label="Stream title" value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} placeholder={meta.defaults.title} hint="For your reference only, not stored on-chain" />
-          <Field label={meta.defaults.recipientLabel} value={form.recipient} onChange={v => setForm(f => ({ ...f, recipient: v }))} placeholder="0x..." />
-          <Field label="Payee address (optional)" value={form.payee} onChange={v => setForm(f => ({ ...f, payee: v }))} placeholder="Defaults to recipient" hint="Useful for multi-sig payees" />
+          <Field
+            label={meta.defaults.recipientLabel}
+            value={form.recipient}
+            onChange={v => setForm(f => ({ ...f, recipient: v }))}
+            placeholder="0x..."
+            hint={`The ${meta.defaults.recipientLabel.toLowerCase()} who will receive USDC. USDC goes to this address.`}
+          />
 
           <div className="grid sm:grid-cols-2" style={{ gap: 12 }}>
             <Field

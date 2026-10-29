@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ConnectKitButton } from 'connectkit'
-import { ArrowRight, ExternalLink, Check, X, Menu, ChevronDown } from 'lucide-react'
+import { ArrowRight, ExternalLink, Check, X, Menu, ChevronDown, Users, Zap, ShieldCheck, Building2, Briefcase, Code2, Globe } from 'lucide-react'
 import { ARC_TESTNET_EXPLORER, METERED_ESCROW } from '@/contract'
 
 // ── Exact reference constants ─────────────────────────────────────────────────
@@ -664,6 +664,277 @@ function ContractCard() {
   )
 }
 
+// ── How it works ─────────────────────────────────────────────────────────────
+function HowItWorks({ onConnect }: { onConnect: () => void }) {
+  const steps = [
+    {
+      n: '01',
+      title: 'Define the terms',
+      body: 'Set recipient, amount, schedule, and grace period in the FlowPay wizard. Terms are hashed into an EIP-712 typed payload — nothing touches the chain yet.',
+      icon: <Briefcase size={18} style={{ color: C.gold }} />,
+    },
+    {
+      n: '02',
+      title: 'Both parties sign',
+      body: 'The recipient and the funder each sign the terms off-chain with their wallet. No gas. No transaction. A cryptographic commitment from both sides.',
+      icon: <ShieldCheck size={18} style={{ color: C.blue }} />,
+    },
+    {
+      n: '03',
+      title: 'Fund the stream',
+      body: 'The funder approves USDC spend and calls createAndFundDeal. The contract verifies both signatures, locks the USDC, and the stream is live.',
+      icon: <Zap size={18} style={{ color: C.green }} />,
+    },
+    {
+      n: '04',
+      title: 'Settle or reclaim',
+      body: 'The recipient calls settle to claim earned units. After expiry the funder can reclaim unearned USDC. No third party holds keys at any point.',
+      icon: <Globe size={18} style={{ color: C.purple }} />,
+    },
+  ]
+
+  return (
+    <div style={{ position: 'relative' as const }}>
+      {/* Connecting line — desktop only */}
+      <div style={{
+        position: 'absolute' as const,
+        top: 44,
+        left: 'calc(12.5% + 18px)',
+        right: 'calc(12.5% + 18px)',
+        height: 1,
+        background: `linear-gradient(to right, ${C.goldBorder}, ${C.border}, ${C.border}, ${C.goldBorder})`,
+        pointerEvents: 'none' as const,
+      }} className="how-line" />
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 0,
+        position: 'relative' as const,
+      }} className="how-grid">
+        {steps.map((s, i) => (
+          <div key={s.n} style={{
+            padding: '0 28px 40px',
+            borderRight: i < steps.length - 1 ? `1px solid ${C.border}` : undefined,
+            display: 'flex',
+            flexDirection: 'column' as const,
+            gap: 16,
+          }}>
+            {/* Step icon circle */}
+            <div style={{
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.035)',
+              border: `1px solid ${C.border}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative' as const,
+              zIndex: 1,
+              flexShrink: 0,
+              boxShadow: '0 0 0 4px #070707',
+            }}>
+              {s.icon}
+            </div>
+
+            <div>
+              <div style={{
+                fontFamily: mono,
+                fontSize: 10,
+                color: C.subtle,
+                letterSpacing: '0.12em',
+                marginBottom: 8,
+              }}>Step {s.n}</div>
+              <div style={{
+                fontFamily: serif,
+                fontSize: 17,
+                color: '#fff',
+                lineHeight: 1.3,
+                marginBottom: 10,
+              }}>{s.title}</div>
+              <p style={{
+                fontFamily: sans,
+                fontSize: 13,
+                lineHeight: 1.75,
+                color: C.muted,
+                margin: 0,
+              }}>{s.body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* CTA under steps */}
+      <div style={{
+        borderTop: `1px solid ${C.border}`,
+        padding: '28px 0 0',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        flexWrap: 'wrap' as const,
+      }}>
+        <GoldBtn onClick={onConnect} style={{ height: 42 }}>
+          Try it now <ArrowRight size={13} />
+        </GoldBtn>
+        <span style={{ fontFamily: sans, fontSize: 12, color: C.subtle }}>
+          No account. No fees. Testnet USDC from the faucet.
+        </span>
+      </div>
+
+      <style>{`
+        @media (max-width: 860px) {
+          .how-grid { grid-template-columns: 1fr 1fr !important; }
+          .how-line { display: none; }
+        }
+        @media (max-width: 540px) {
+          .how-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+// ── Built for ─────────────────────────────────────────────────────────────────
+function BuiltFor() {
+  const personas = [
+    {
+      icon: <Building2 size={20} />,
+      color: C.blue,
+      colorDim: 'rgba(96,165,250,0.10)',
+      colorBorder: 'rgba(96,165,250,0.20)',
+      who: 'DAOs',
+      headline: 'Pay contributors without a payroll service',
+      body: 'Set up recurring USDC salary streams for core contributors. Proposals pass, streams fund automatically. No bank account, no jurisdiction.',
+      tags: ['Payroll', 'Recurring'],
+    },
+    {
+      icon: <Code2 size={20} />,
+      color: C.purple,
+      colorDim: 'rgba(192,132,252,0.10)',
+      colorBorder: 'rgba(192,132,252,0.20)',
+      who: 'Startups',
+      headline: 'Token-free vesting for early team members',
+      body: 'Lock USDC grants with cliff periods and linear tranches. Founders vest alongside employees. No token volatility, no cliff renegotiation.',
+      tags: ['Vesting', 'Grants'],
+    },
+    {
+      icon: <Briefcase size={20} />,
+      color: '#fbbf24',
+      colorDim: 'rgba(251,191,36,0.10)',
+      colorBorder: 'rgba(251,191,36,0.20)',
+      who: 'Freelancers',
+      headline: 'Get paid per deliverable, on-chain',
+      body: 'No invoice chasing. Lock payment upfront, deliver milestones, claim USDC immediately. Grace period protects partial work from abandonment.',
+      tags: ['Milestones', 'Escrow'],
+    },
+    {
+      icon: <Users size={20} />,
+      color: C.green,
+      colorDim: 'rgba(74,222,128,0.10)',
+      colorBorder: 'rgba(74,222,128,0.20)',
+      who: 'Protocol teams',
+      headline: 'Trustless contractor agreements',
+      body: 'Both parties sign terms before funds are locked. No intermediary arbiter. Disputes resolve by on-chain proof of deliverables, not good faith.',
+      tags: ['Non-custodial', 'EIP-712'],
+    },
+  ]
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 1, background: C.border }}>
+      {personas.map((p) => (
+        <div
+          key={p.who}
+          style={{
+            background: '#0c0c0c',
+            padding: '32px 28px',
+            display: 'flex',
+            flexDirection: 'column' as const,
+            gap: 18,
+            position: 'relative' as const,
+            overflow: 'hidden' as const,
+          }}
+        >
+          {/* Subtle radial glow in corner */}
+          <div style={{
+            position: 'absolute' as const,
+            top: -40,
+            right: -40,
+            width: 160,
+            height: 160,
+            borderRadius: '50%',
+            background: p.colorDim,
+            filter: 'blur(40px)',
+            pointerEvents: 'none' as const,
+          }} />
+
+          {/* Icon */}
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: 10,
+            background: p.colorDim,
+            border: `1px solid ${p.colorBorder}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: p.color,
+            flexShrink: 0,
+          }}>
+            {p.icon}
+          </div>
+
+          {/* Who label */}
+          <div>
+            <span style={{
+              fontFamily: sans,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase' as const,
+              color: p.color,
+            }}>{p.who}</span>
+            <h3 style={{
+              fontFamily: serif,
+              fontSize: 18,
+              fontWeight: 400,
+              color: '#fff',
+              margin: '8px 0 0',
+              lineHeight: 1.3,
+            }}>{p.headline}</h3>
+          </div>
+
+          <p style={{
+            fontFamily: sans,
+            fontSize: 13,
+            lineHeight: 1.75,
+            color: C.muted,
+            margin: 0,
+          }}>{p.body}</p>
+
+          {/* Tags */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginTop: 'auto' }}>
+            {p.tags.map(t => (
+              <span key={t} style={{
+                fontFamily: sans,
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase' as const,
+                color: p.color,
+                background: p.colorDim,
+                border: `1px solid ${p.colorBorder}`,
+                borderRadius: 4,
+                padding: '2px 7px',
+              }}>{t}</span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Section wrapper ───────────────────────────────────────────────────────────
 function Section({ id, children, noPad }: {
   id?: string; children: React.ReactNode; noPad?: boolean
@@ -796,6 +1067,30 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
           sub="Each type is a configuration of the same contract. Pick the one that matches your agreement."
         />
         <StreamCards onConnect={handleConnect} />
+      </Section>
+
+      {/* ── HOW IT WORKS ── */}
+      <Rule />
+      <Section id="how-it-works">
+        <SectionHeader
+          tag="How it works"
+          title="From agreement to settlement in four steps"
+          sub="FlowPay separates commitment from execution. Both parties sign off-chain, funds lock on-chain, and settlement is trustless."
+        />
+        <HowItWorks onConnect={handleConnect} />
+      </Section>
+
+      {/* ── BUILT FOR ── */}
+      <Rule style={{ marginTop: 60 }} />
+      <Section id="built-for">
+        <SectionHeader
+          tag="Built for"
+          title="Every USDC payment relationship"
+          sub="Whether you run a DAO, a startup, or a freelance practice — FlowPay replaces trust with cryptographic proof."
+        />
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden', marginBottom: 60 }}>
+          <BuiltFor />
+        </div>
       </Section>
 
       {/* ── COMPARISON ── */}
